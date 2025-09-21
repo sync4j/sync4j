@@ -5,8 +5,7 @@ import java.util.List;
 
 import jakarta.annotation.Nonnull;
 
-public interface FileProvider<T extends File> extends AutoCloseable {
-    
+public interface FileProvider extends AutoCloseable {
     @Nonnull
     default List<HashAlgorithm> getSupportedHash() {
         return List.of();
@@ -16,10 +15,10 @@ public interface FileProvider<T extends File> extends AutoCloseable {
         return false;
     }
 
+    @Nonnull
     File get(@Nonnull String path, boolean recursive) throws IOException;
 
     default void close() {
         // Does nothing by default
     }
 }
-

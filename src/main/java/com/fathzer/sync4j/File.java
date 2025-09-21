@@ -10,9 +10,9 @@ public interface File {
 
     String getName();
 
-    long getSize();
+    long getSize() throws IOException;
 
-    long getLastModified();
+    long getLastModified() throws IOException;
 
     /**
      * List the direct children of this file.
