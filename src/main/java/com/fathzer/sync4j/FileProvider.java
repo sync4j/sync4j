@@ -12,10 +12,11 @@ public interface FileProvider<T extends File> extends AutoCloseable {
         return List.of();
     }
 
-    @Nonnull
-    default String getHash(@Nonnull T file, @Nonnull HashAlgorithm hashAlgorithm) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+    default boolean isFastListSupported() {
+        return false;
     }
+
+    File get(@Nonnull String path, boolean recursive) throws IOException;
 
     default void close() {
         // Does nothing by default
