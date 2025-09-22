@@ -1,6 +1,8 @@
 package com.fathzer.sync4j.parameters;
 
 import java.nio.file.Path;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -16,10 +18,20 @@ public class SyncParameters {
     private FileComparator fileComparator;
     private PerformanceParameters performance;
     
+    /**
+     * Creates a new instance of SyncParameters.
+     * <br>
+     * Default file comparator is {@link FileComparator#SIZE} and {@link FileComparator#MOD_DATE}.
+     * Default performance parameters is created by the default constructor of {@link PerformanceParameters}.
+     * Default filter is <code>path -> true</code>. 
+     * @param source
+     * @param destination
+     * @throws IllegalArgumentException if the destination is a file and the source is not
+     */
     public SyncParameters(@Nonnull File source, @Nonnull File destination) {
         this.source = Objects.requireNonNull(source);
         this.destination = Objects.requireNonNull(destination);
-        this.fileComparator = (f1, f2) -> f1.getSize() == f2.getSize();
+        this.fileComparator = FileComparator.of(List.of(FileComparator.SIZE, FileComparator.MOD_DATE));
         this.performance = new PerformanceParameters();
         this.fastList = false;
         this.filter = path -> true;

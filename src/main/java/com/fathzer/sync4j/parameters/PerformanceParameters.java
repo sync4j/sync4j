@@ -4,6 +4,11 @@ public class PerformanceParameters {
     private int maxTransferThreads;
     private int maxComparisonThreads;
     
+    /**
+     * Creates a new instance of PerformanceParameters.
+     * <br>
+     * Default values are {@link #setMaxTransferThreads(int)} = 1 and {@link #setMaxComparisonThreads(int)} = 1.
+     */
     public PerformanceParameters() {
         this.maxTransferThreads = 1;
         this.maxComparisonThreads = 1;

@@ -3,6 +3,7 @@ package com.fathzer.sync4j.file;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -17,6 +18,11 @@ public class LocalFile implements File {
     }
 
     @Override
+    public boolean exists() {
+        return Files.exists(path);
+    }
+    
+    @Override
     public boolean isFile() {
         return Files.isRegularFile(path);
     }
@@ -29,6 +35,12 @@ public class LocalFile implements File {
     @Override
     public long getSize() throws IOException {
         return Files.size(path);
+    }
+
+    @Override
+    public long getCreationTime() throws IOException {
+        final FileTime attribute = (FileTime) Files.getAttribute(path, "creationTime");
+        return attribute.toMillis();
     }
 
     @Override
