@@ -7,10 +7,12 @@ import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 
-public class LocalFile implements File {
+public class LocalFile implements File, Folder {
     private final Path path;
 
     LocalFile(Path path) {
@@ -25,6 +27,11 @@ public class LocalFile implements File {
     @Override
     public boolean isFile() {
         return Files.isRegularFile(path);
+    }
+
+    @Override
+    public boolean isFolder() {
+        return Files.isDirectory(path);
     }
 
     @Override
@@ -54,10 +61,16 @@ public class LocalFile implements File {
     }
 
     @Override
-    public List<File> list() throws IOException {
+    public List<Entry> list() throws IOException {
         try (Stream<Path> stream = Files.list(path)) {
-            return stream.map(p -> (File) new LocalFile(p)).toList();
+            return stream.map(p -> (Entry) new LocalFile(p)).toList();
         }
+    }
+
+    @Override
+    public void delete() throws IOException {
+        //TODO
+        Files.delete(path);
     }
 }
 

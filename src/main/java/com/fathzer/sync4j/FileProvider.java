@@ -32,14 +32,14 @@ public interface FileProvider extends AutoCloseable {
     }
 
     /**
-     * Returns the file at the given path.
+     * Returns the file or folder at the given path.
      * @param path the path of the file
      * @param recursive if true, the fast list feature is used if supported
-     * @return the file, even if it does not exist (see {@link File#exists()})
+     * @return the file or folder, even if it does not exist (see {@link Entry#exists()})
      * @throws IOException if an I/O error occurs
      */
     @Nonnull
-    File get(@Nonnull String path, boolean recursive) throws IOException;
+    Entry get(@Nonnull String path, boolean recursive) throws IOException;
 
     /**
      * Closes this provider.

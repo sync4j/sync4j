@@ -1,32 +1,13 @@
 package com.fathzer.sync4j;
 
 import java.io.IOException;
-import java.util.List;
 
 import jakarta.annotation.Nonnull;
 
 /**
- * A generic file or a folder, whatever is its provider.
+ * A generic file, whatever is its provider.
  */
-public interface File {
-    /**
-     * Returns true if this file is a file.
-     * @return true if this file is a file, false if it is a folder or a non existing file
-     */
-    boolean isFile();
-
-    /**
-     * Returns the name of this file.
-     * @return the name of this file
-     */
-    String getName();
-
-    /**
-     * Returns true if this file exists.
-     * @return true if this file exists
-     */
-    boolean exists();
-
+public interface File extends Entry {
     /**
      * Returns the size of this file.
      * <br>For folders and non existing files, the method is not specified (it could throw an exception or return a value).
@@ -52,13 +33,6 @@ public interface File {
      * @throws IOException if an I/O error occurs
      */
     long getLastModified() throws IOException;
-
-    /**
-     * List the direct children of this file.
-     * @return the list of children
-     * @throws IOException if an I/O error occurs or if this file is not a folder
-     */
-    List<File> list() throws IOException;
 
     /**
      * Returns the hash of this file.
