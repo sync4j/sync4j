@@ -6,15 +6,19 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
+import com.fathzer.sync4j.util.ProgressInputStream;
 
 public class LocalFile implements File, Folder {
     private final Path path;
@@ -102,6 +106,30 @@ public class LocalFile implements File, Folder {
     @Override
     public InputStream getInputStream() throws IOException {
         return Files.newInputStream(path);
+    }
+
+    @Override
+    public void copy(String fileName, File content, LongConsumer progressListener) throws IOException {
+        checkFileName(fileName);
+        Objects.requireNonNull(content, "Content cannot be null");
+        
+        final Path targetPath = path.resolve(fileName);
+        
+        try (InputStream in = progressListener != null 
+                ? new ProgressInputStream(content.getInputStream(), progressListener)
+                : content.getInputStream()) {
+            Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+        
+        // Copy file attributes
+        Files.setLastModifiedTime(targetPath, FileTime.fromMillis(content.getLastModified()));
+        
+        // Note: Setting creation time is platform dependent and may not work on all systems
+        try {
+            Files.setAttribute(targetPath, "creationTime", FileTime.fromMillis(content.getCreationTime()));
+        } catch (UnsupportedOperationException | IOException e) {
+            // Ignore if setting creation time is not supported
+        }
     }
 }
 
