@@ -1,6 +1,7 @@
 package com.fathzer.sync4j;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import jakarta.annotation.Nonnull;
 
@@ -44,4 +45,11 @@ public interface File extends Entry {
     default String getHash(@Nonnull HashAlgorithm hashAlgorithm) throws IOException {
         throw new UnsupportedOperationException("Not implemented");
     }
+
+    /**
+     * Returns an input stream to read the content of this file.
+     * @return an input stream to read the content of this file
+     * @throws IOException if an I/O error occurs
+     */
+    InputStream getInputStream() throws IOException;
 }

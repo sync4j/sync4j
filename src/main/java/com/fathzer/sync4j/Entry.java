@@ -58,7 +58,8 @@ public interface Entry {
 
     /**
      * Deletes this entry.
+     * <br>This method deletes recursively folders.
+     * <br>For non existing entries, the method does nothing.
      */
-    //TODO Needs precision on semantic, are folder deleted recursively, or only empty folder?
     void delete() throws IOException;
 }

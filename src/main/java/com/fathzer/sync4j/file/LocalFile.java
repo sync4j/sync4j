@@ -1,8 +1,12 @@
 package com.fathzer.sync4j.file;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -69,8 +73,35 @@ public class LocalFile implements File, Folder {
 
     @Override
     public void delete() throws IOException {
-        //TODO
-        Files.delete(path);
+        if (isFolder()) {
+            deletedFolder(path);
+        } else if (exists()) {
+            Files.delete(path);
+        }
+    }
+
+    public void deletedFolder(Path pathToBeDeleted) throws IOException {
+        Files.walkFileTree(pathToBeDeleted, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                if (exc != null) {
+                    throw exc;
+                }
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+            
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    @Override
+    public InputStream getInputStream() throws IOException {
+        return Files.newInputStream(path);
     }
 }
 
