@@ -117,7 +117,7 @@ public class LocalFile implements File, Folder {
     }
 
     @Override
-    public void copy(String fileName, File content, LongConsumer progressListener) throws IOException {
+    public File copy(String fileName, File content, LongConsumer progressListener) throws IOException {
         checkFileName(fileName);
         Objects.requireNonNull(content, "Content cannot be null");
         
@@ -138,6 +138,15 @@ public class LocalFile implements File, Folder {
         } catch (UnsupportedOperationException | IOException e) {
             // Ignore if setting creation time is not supported
         }
+        return new LocalFile(targetPath);
+    }
+
+    @Override
+    public Folder mkdir(String folderName) throws IOException {
+        checkFileName(folderName);
+        final Path targetPath = path.resolve(folderName);
+        Files.createDirectory(targetPath);
+        return new LocalFile(targetPath);
     }
 
     @Override

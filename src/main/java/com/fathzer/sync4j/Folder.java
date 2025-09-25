@@ -25,6 +25,7 @@ public interface Folder extends Entry {
      * @throws UnsupportedOperationException if the provider does not support the fast-list feature
      * @see FileProvider#isFastListSupported()
      */
+    @Nonnull
     default Folder preload() throws IOException {
         throw new UnsupportedOperationException("Preload (fast list) is not supported");
     }
@@ -38,12 +39,23 @@ public interface Folder extends Entry {
      * @param progressListener an optional listener to track copy progress (can be null)
      * @throws IOException if an I/O error occurs
      */
-    void copy(@Nonnull String fileName, @Nonnull File content, LongConsumer progressListener) throws IOException;
+    File copy(@Nonnull String fileName, @Nonnull File content, LongConsumer progressListener) throws IOException;
     
-    default void checkFileName(String fileName) {
-        if (fileName == null) {
-            throw new NullPointerException("File name cannot be null");
-        }
+    /**
+     * Create a new folder in this folder.
+     * @param folderName the name of the folder to create (can't be empty or null, can't contain path separator)
+     * @throws IOException if an I/O error occurs (also if the file already exists, if create directory is not authorized, etc...)
+     */
+    @Nonnull
+    Folder mkdir(@Nonnull String folderName) throws IOException; 
+
+    /**
+     * Check if a file name is valid.
+     * @param fileName the file name to check
+     * @throws NullPointerException if the file name is null
+     * @throws IllegalArgumentException if the file name is empty or contains path separator
+     */
+    default void checkFileName(@Nonnull String fileName) {
         if (fileName.trim().isEmpty() || fileName.contains("/")) {
             throw new IllegalArgumentException("File name cannot be empty or contain path separator");
         }
