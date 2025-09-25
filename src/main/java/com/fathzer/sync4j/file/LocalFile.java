@@ -11,6 +11,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
@@ -24,14 +25,9 @@ public class LocalFile implements File, Folder {
     private final Path path;
 
     LocalFile(Path path) {
-        this.path = path;
+        this.path = path.toAbsolutePath();
     }
 
-    @Override
-    public boolean exists() {
-        return Files.exists(path);
-    }
-    
     @Override
     public boolean isFile() {
         return Files.isRegularFile(path);
@@ -43,8 +39,20 @@ public class LocalFile implements File, Folder {
     }
 
     @Override
+    public Optional<Entry> getParent() throws IOException {
+        final Path parent = path.getParent();
+        if (parent == null) {
+            return Optional.empty();
+        } else if (Files.isRegularFile(parent)) {
+            throw new IOException("Parent is a file");
+        }
+        return Optional.of(new LocalFile(parent));
+    }
+    
+    @Override
     public String getName() {
-        return path.getFileName().toString();
+        final Path fileName = path.getFileName();
+        return fileName == null ? "" : fileName.toString();
     }
 
     @Override
@@ -130,6 +138,11 @@ public class LocalFile implements File, Folder {
         } catch (UnsupportedOperationException | IOException e) {
             // Ignore if setting creation time is not supported
         }
+    }
+
+    @Override
+    public String toString() {
+        return path.toAbsolutePath().toString();
     }
 }
 

@@ -1,6 +1,7 @@
 package com.fathzer.sync4j;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * A generic entry (file or folder), whatever is its provider.
@@ -46,16 +47,26 @@ public interface Entry {
 
     /**
      * Returns true if this entry exists.
+     * <br>This method returns true if this entry is a file or a folder.
      * @return true if this entry exists, false if it does not exist
      */
-    boolean exists();
+    default boolean exists() {
+        return isFile() || isFolder();
+    }
 
     /**
      * Returns the name of this entry.
      * @return the name of this entry
      */
     String getName();
-
+    
+    /**
+     * Returns the parent of this entry.
+     * @return the parent of this entry, or an empty optional if this entry is the root.
+     * @throws IOException if an I/O error occurs or if this entry does not exists and its parent exists and is a file
+     */
+    Optional<Entry> getParent() throws IOException;
+    
     /**
      * Deletes this entry.
      * <br>This method deletes recursively folders.

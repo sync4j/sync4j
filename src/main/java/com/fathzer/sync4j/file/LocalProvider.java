@@ -15,7 +15,7 @@ public class LocalProvider implements FileProvider {
     }
 
     @Override
-    public Entry get(String path, boolean recursive) throws IOException {
+    public Entry get(String path) throws IOException {
         return new LocalFile(Paths.get(path));
     }
 }

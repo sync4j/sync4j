@@ -15,6 +15,21 @@ public interface Folder extends Entry {
     List<Entry> list() throws IOException;
 
     /**
+     * Preload the tree structure of this folder (this is the fast-list feature). 
+     * <br>
+     * The default implementation throws an {@link UnsupportedOperationException} which is the expected behavior
+     * if the provider does not support the fast-list feature.
+     * @return this folder or a new folder with the same path but with the tree structure preloaded.
+     * <br>If the folder is already preloaded, this method returns this folder and does nothing.
+     * @throws IOException if an I/O error occurs
+     * @throws UnsupportedOperationException if the provider does not support the fast-list feature
+     * @see FileProvider#isFastListSupported()
+     */
+    default Folder preload() throws IOException {
+        throw new UnsupportedOperationException("Preload (fast list) is not supported");
+    }
+
+    /**
      * Write a file in this folder.
      * <br>
      * If the file already exists, it is overwritten.
