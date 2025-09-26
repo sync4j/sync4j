@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,10 +26,21 @@ class LocalFileTest {
         assertThrows (IOException.class, fakeFile::getParent);
     }
 
+    @Test
+    void testGetParentPath() throws IOException {
+        final Path path = Paths.get("toto.txt");
+        Entry file = new LocalFile(path);
+        String expected = path.toAbsolutePath().getParent().toString();
+        assertEquals(expected, file.getParentPath());
+
+        Entry root = getRoot();
+        assertEquals(null, root.getParentPath());
+    }
+
     private int countParent(Entry entry) throws IOException {
         int count = 0;
-        while (entry.getParent().isPresent()) {
-            entry = entry.getParent().get();
+        while (entry.getParent()!=null) {
+            entry = entry.getParent();
             count++;
         }
         return count;
@@ -56,8 +66,8 @@ class LocalFileTest {
     private Entry getRoot() throws IOException {
         final Path path = Paths.get("toto.txt");
         Entry file = new LocalFile(path);
-        for (Optional<Entry> parent = Optional.of(file); parent.isPresent(); parent = parent.get().getParent()) {
-            file = parent.get();
+        for (Entry parent = file; parent!=null; parent = parent.getParent()) {
+            file = parent;
         }
         return file;
     }

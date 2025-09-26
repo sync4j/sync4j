@@ -1,7 +1,9 @@
 package com.fathzer.sync4j;
 
 import java.io.IOException;
-import java.util.Optional;
+
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 /**
  * A generic entry (file or folder), whatever is its provider.
@@ -25,6 +27,7 @@ public interface Entry {
      * @throws IllegalStateException if this entry is not a file
      * @see #isFile()
      */
+    @Nonnull
     default File asFile() {
         if (isFile()) {
             return (File)this;
@@ -38,6 +41,7 @@ public interface Entry {
      * @throws IllegalStateException if this entry is not a folder
      * @see #isFolder()
      */
+    @Nonnull
     default Folder asFolder() {
         if (isFolder()) {
             return (Folder)this;
@@ -58,14 +62,24 @@ public interface Entry {
      * Returns the name of this entry.
      * @return the name of this entry
      */
+    @Nonnull
     String getName();
-    
+
     /**
-     * Returns the parent of this entry.
-     * @return the parent of this entry, or an empty optional if this entry is the root.
+     * Returns the path of the parent of this entry.
+     * @return the path of the parent of this entry, or null if this entry is the root.
      * @throws IOException if an I/O error occurs or if this entry does not exists and its parent exists and is a file
      */
-    Optional<Entry> getParent() throws IOException;
+    @Nullable
+    String getParentPath() throws IOException;
+
+    /**
+     * Returns the parent of this entry.
+     * @return the parent of this entry, or null if this entry is the root.
+     * @throws IOException if an I/O error occurs or if this entry does not exists and its parent exists and is a file
+     */
+    @Nullable
+    Entry getParent() throws IOException;
     
     /**
      * Deletes this entry.

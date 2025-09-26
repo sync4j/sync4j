@@ -11,7 +11,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
@@ -46,15 +45,26 @@ class LocalFile implements File, Folder {
     }
 
     @Override
-    public Optional<Entry> getParent() throws IOException {
+    public Entry getParent() throws IOException {
+        final Path parent = getRawParentPath();
+        return parent == null ? null : new LocalFile(parent);
+    }
+    
+    @Override
+    public String getParentPath() throws IOException {
+        final Path parent = getRawParentPath();
+        return parent==null ? null : parent.toString();
+    }
+
+    private Path getRawParentPath() throws IOException {
         final Path parent = path.getParent();
         if (parent == null) {
-            return Optional.empty();
+            return null;
         } else if (Files.isRegularFile(parent)) {
             throw new IOException("Parent is a file");
         }
-        return Optional.of(new LocalFile(parent));
-    }
+        return parent;
+    }  
     
     @Override
     public String getName() {

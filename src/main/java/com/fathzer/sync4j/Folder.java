@@ -15,6 +15,7 @@ public interface Folder extends Entry {
      * @return the list of children
      * @throws IOException if an I/O error occurs or if this file is not a folder
      */
+	@Nonnull
     List<Entry> list() throws IOException;
 
     /**
@@ -43,6 +44,7 @@ public interface Folder extends Entry {
      * @return the copied file
      * @throws IOException if an I/O error occurs
      */
+    @Nonnull
     File copy(@Nonnull String fileName, @Nonnull File content, LongConsumer progressListener) throws IOException;
     
     /**

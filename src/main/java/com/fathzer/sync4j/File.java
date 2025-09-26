@@ -42,6 +42,7 @@ public interface File extends Entry {
      * @throws IOException if an I/O error occurs or if this file is not a file
      * @throws UnsupportedOperationException if the hash algorithm is not supported
      */
+    @Nonnull
     default String getHash(@Nonnull HashAlgorithm hashAlgorithm) throws IOException {
         throw new UnsupportedOperationException("Not implemented");
     }
@@ -51,5 +52,6 @@ public interface File extends Entry {
      * @return an input stream to read the content of this file
      * @throws IOException if an I/O error occurs
      */
+    @Nonnull
     InputStream getInputStream() throws IOException;
 }
