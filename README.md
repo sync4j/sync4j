@@ -7,9 +7,9 @@
 
 sync4j is a Java library for synchronizing files and folders.
 
-It is designed as a replacement of famous [rclone](https://rclone.org/) tool in development.  
-*rclone* is a very impressive command line program to manage files on cloud storage ... but has some drawbacks when used in applications.
-Typically, the root cause of this alternative project is *rclone* stops sending progress data on stdout when it is used, for instance in a Docker container with no tty, making it unusable in applications that need to track progress of long synchronizations.
+It is designed as a replacement of the famous [rclone](https://rclone.org/) tool as a reusable library.  
+*rclone* is a very impressive command line program to manage files on various cloud storages ... but has some drawbacks when launched from an application.
+Typically, the root cause of this alternative project is *rclone* command line tool stops sending progress data on stdout when it is used, for instance in a Docker container with no tty. It's http API (launched with `rclone rcd`) misses clear documentation and some important features like file exclusions remains unsupported (or at least undocumented). This makes it unusable in application development if you need to track progress of long synchronizations and exclude files, which seems to be a common use case.
 
 ## Features
 

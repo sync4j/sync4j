@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 import com.fathzer.sync4j.util.ProgressInputStream;
@@ -34,6 +35,11 @@ class LocalFile implements File, Folder {
         this.path = path.toAbsolutePath();
     }
 
+    @Override
+    public FileProvider getFileProvider() {
+        return LocalProvider.INSTANCE;
+    }
+    
     @Override
     public boolean isFile() {
         return Files.isRegularFile(path);

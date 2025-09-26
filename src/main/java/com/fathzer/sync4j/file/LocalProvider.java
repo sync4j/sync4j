@@ -11,7 +11,20 @@ import com.fathzer.sync4j.HashAlgorithm;
 /**
  * A local file provider.
  */
+@SuppressWarnings("java:S6548")
 public class LocalProvider implements FileProvider {
+    /**
+     * The singleton instance of this provider.
+     */
+    public static final LocalProvider INSTANCE = new LocalProvider();
+    
+    /**
+     * Constructor.
+     */
+    private LocalProvider() {
+        // Do nothing
+    }
+    
     @Override
     public List<HashAlgorithm> getSupportedHash() {
         return List.of(HashAlgorithm.values());

@@ -88,4 +88,11 @@ public interface Entry {
      * @throws IOException if an I/O error occurs
      */
     void delete() throws IOException;
+
+    /**
+     * Returns the provider that created this entry.
+     * @return a FileProvider
+     */
+    @Nonnull
+    FileProvider getFileProvider();
 }
