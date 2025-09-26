@@ -11,7 +11,7 @@ import com.fathzer.sync4j.HashAlgorithm;
 /**
  * A local file provider.
  */
-class LocalProvider implements FileProvider {
+public class LocalProvider implements FileProvider {
     @Override
     public List<HashAlgorithm> getSupportedHash() {
         return List.of(HashAlgorithm.values());
