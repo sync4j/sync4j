@@ -71,6 +71,7 @@ public interface Entry {
      * Deletes this entry.
      * <br>This method deletes recursively folders.
      * <br>For non existing entries, the method does nothing.
+     * @throws IOException if an I/O error occurs
      */
     void delete() throws IOException;
 }

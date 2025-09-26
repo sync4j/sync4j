@@ -21,7 +21,7 @@ public interface FileProvider extends AutoCloseable {
     /**
      * Returns true if the provider supports the fast-list feature.
      * <br>The fast list feature allows to recursively fetch metadata of all files
-     * and (sub-)folders of a folder during the {@link FileProvider#get(String, boolean)} call.
+     * and (sub-)folders of a folder during the {@link FileProvider#get(String)} call.
      * Even if it is provider dependent, it is recommended to implement this feature by a unique call
      * instead of fetching metadata of each file and (sub-)folder separately.
      * <br>Of course, for very large datasets, using this feature may cause out of memory errors.
@@ -34,7 +34,9 @@ public interface FileProvider extends AutoCloseable {
 
     /**
      * Returns the file or folder at the given path.
-     * @param path the path of the file
+     * @param path the path of the file. <br>
+     * <b>Warning</b>: The path syntax is provider and/or platform dependent.
+     * It is the responsibility of the caller to provide a valid path for the provider and the platform.
      * @return the file or folder, even if it does not exist (see {@link Entry#exists()})
      * @throws IOException if an I/O error occurs
      */

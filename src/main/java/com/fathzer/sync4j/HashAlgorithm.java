@@ -13,8 +13,17 @@ import jakarta.annotation.Nonnull;
  * Utility class for computing hashes of data using various algorithms.
  */
 public enum HashAlgorithm {
+    /**
+     * <a href="https://en.wikipedia.org/wiki/MD5">MD5</a> hash algorithm.
+     */
     MD5("MD5"),
+    /**
+     * <a href="https://en.wikipedia.org/wiki/SHA-1">SHA-1</a> hash algorithm.
+     */
     SHA1("SHA-1"),
+    /**
+     * <a href="https://en.wikipedia.org/wiki/SHA-256">SHA-256</a> hash algorithm.
+     */
     SHA256("SHA-256");
 
     private final String algorithmName;
@@ -29,6 +38,10 @@ public enum HashAlgorithm {
         }
     }
 
+    /**
+     * Returns the name of the algorithm.
+     * @return the name of the algorithm
+     */
     @Nonnull
     public String getAlgorithmName() {
         return algorithmName;

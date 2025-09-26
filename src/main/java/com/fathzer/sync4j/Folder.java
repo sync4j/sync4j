@@ -6,6 +6,9 @@ import java.util.function.LongConsumer;
 
 import jakarta.annotation.Nonnull;
 
+/**
+ * A folder.
+ */
 public interface Folder extends Entry {
     /**
      * List the direct children of this file.
@@ -37,6 +40,7 @@ public interface Folder extends Entry {
      * @param fileName the name of the file to write (can't be empty or null, can't contain path separator)
      * @param content the content of the file to write (can't be null)
      * @param progressListener an optional listener to track copy progress (can be null)
+     * @return the copied file
      * @throws IOException if an I/O error occurs
      */
     File copy(@Nonnull String fileName, @Nonnull File content, LongConsumer progressListener) throws IOException;
@@ -44,6 +48,7 @@ public interface Folder extends Entry {
     /**
      * Create a new folder in this folder.
      * @param folderName the name of the folder to create (can't be empty or null, can't contain path separator)
+     * @return the created folder
      * @throws IOException if an I/O error occurs (also if the file already exists, if create directory is not authorized, etc...)
      */
     @Nonnull

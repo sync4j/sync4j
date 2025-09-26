@@ -8,7 +8,10 @@ import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.HashAlgorithm;
 
-public class LocalProvider implements FileProvider {
+/**
+ * A local file provider.
+ */
+class LocalProvider implements FileProvider {
     @Override
     public List<HashAlgorithm> getSupportedHash() {
         return List.of(HashAlgorithm.values());

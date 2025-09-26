@@ -21,9 +21,16 @@ import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 import com.fathzer.sync4j.util.ProgressInputStream;
 
-public class LocalFile implements File, Folder {
+/**
+ * A local file.
+ */
+class LocalFile implements File, Folder {
     private final Path path;
 
+    /**
+     * Constructor.
+     * @param path the path of the file
+     */
     LocalFile(Path path) {
         this.path = path.toAbsolutePath();
     }
