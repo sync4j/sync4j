@@ -18,4 +18,21 @@ Typically, the root cause of this alternative project is *rclone* stops sending 
 - Support for remote files and folders:
     Currently there's only one provider supported:
     - [pCloud](https://www.pcloud.com/) -> [pCloudProvider](https://github.com/fathzer/sync4j-pcloud)
+
+## Requirements
+
+- Java 21
+
+## Installation
+
+Import with Maven:
+
+```xml
+<dependency>
+    <groupId>com.fathzer</groupId>
+    <artifactId>sync4j</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
+```
+
     
