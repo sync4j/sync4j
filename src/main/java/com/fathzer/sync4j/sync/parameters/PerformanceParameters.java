@@ -1,6 +1,7 @@
-package com.fathzer.sync4j.parameters;
+package com.fathzer.sync4j.sync.parameters;
 
 public class PerformanceParameters {
+    private boolean fastList;
     private int maxTransferThreads;
     private int maxComparisonThreads;
     
@@ -12,6 +13,14 @@ public class PerformanceParameters {
     public PerformanceParameters() {
         this.maxTransferThreads = 1;
         this.maxComparisonThreads = 1;
+    }
+    
+    public boolean isFastList() {
+        return fastList;
+    }
+    
+    public void setFastList(boolean fastList) {
+        this.fastList = fastList;
     }
     
     public int getMaxTransferThreads() {

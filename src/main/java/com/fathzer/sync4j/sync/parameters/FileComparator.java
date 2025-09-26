@@ -1,4 +1,4 @@
-package com.fathzer.sync4j.parameters;
+package com.fathzer.sync4j.sync.parameters;
 
 import java.io.IOException;
 

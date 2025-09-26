@@ -174,7 +174,7 @@ class LocalFile implements File, Folder {
 
     @Override
     public String toString() {
-        return path.toAbsolutePath().toString();
+        return "local:" + path.toAbsolutePath().toString();
     }
 }
 
