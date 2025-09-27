@@ -1,9 +1,10 @@
 package com.fathzer.sync4j;
 
-public record Event(Type type, Action action) {
-    public enum Type {
-        START,
-        END
+public record Event(Action action, Status status) {
+    public enum Status {
+        PLANNED,
+        STARTED,
+        ENDED
     }
 
     public sealed interface Action permits ListAction {

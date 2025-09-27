@@ -12,6 +12,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,81 +27,47 @@ import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.Event.Action;
 import com.fathzer.sync4j.Event.ListAction;
-import com.fathzer.sync4j.Event.Type;
+import com.fathzer.sync4j.Event.Status;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 import jakarta.annotation.Nonnull;
 
 public class Synchronizer {
-    private final SyncParameters parameters;
     private final Folder source;
     private final Folder destination;
-    private final ExecutorService tasksService;
-    private final ExecutorService copyService;
-
-    private final Consumer<Event> listener = System.out::println; //TODO
+    private Context context;
 
     public Synchronizer(@Nonnull Folder source, @Nonnull Folder destination, @Nonnull SyncParameters parameters) throws IOException {
         this.source = Objects.requireNonNull(source);
         this.destination = Objects.requireNonNull(destination);
-        this.parameters = Objects.requireNonNull(parameters);
-        this.tasksService = Executors.newFixedThreadPool(parameters.getPerformance().getMaxComparisonThreads(), new DaemonThreadFactory("tasks"));
-        this.copyService = Executors.newFixedThreadPool(parameters.getPerformance().getMaxTransferThreads(), new DaemonThreadFactory("copy"));
+        this.context = new Context(parameters);
     }
 
-    private static class DaemonThreadFactory implements ThreadFactory {
-        private static final AtomicInteger THREAD_NUMBER = new AtomicInteger(1);
-        private final String namePrefix;
-        
-        DaemonThreadFactory(String namePrefix) {
-            this.namePrefix = namePrefix;
-        }
-        
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread thread = new Thread(r, namePrefix + "-" + THREAD_NUMBER.getAndIncrement());
-            thread.setDaemon(true);
-            thread.setName(namePrefix);
-            return thread;
-        };
-    }
 
     public void run() throws IOException {
         Folders folders = new Folders(source, destination);
         System.out.println("Syncing " + source + " -> " + destination);
-        if (parameters.getPerformance().isFastList()) {
+        if (context.params().performance().fastList()) {
             doPreload(folders);
         }
         synchronizeFolder(folders.source, folders.destination, null);
     }
 
     private void doPreload(Folders folders) throws IOException {
-        List<Future<Folder>> futures = new LinkedList<>();
-        if (folders.source.getFileProvider().isFastListSupported()) futures.add(doAction(new Event.ListAction(folders.source, true), () -> {
-            folders.source = folders.source.preload();
-            return folders.source;
-        }, tasksService));
-        if (folders.destination.getFileProvider().isFastListSupported()) futures.add(doAction(new Event.ListAction(folders.destination, true), () -> {
-            folders.destination = folders.destination.preload();
-            return folders.destination;
-        }, tasksService));
+        List<Future<?>> futures = new LinkedList<>();
+        if (folders.source.getFileProvider().isFastListSupported()) {
+            futures.add(context.walkService().submit(new PreloadTask(context, folders, true)));
+        }
+        if (folders.destination.getFileProvider().isFastListSupported()) futures.add(context.walkService().submit(() -> {
+            futures.add(context.walkService().submit(new PreloadTask(context, folders, false)));
+        }));
 
-        for (Future<Folder> future : futures) {
+        for (Future<?> future : futures) {
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new IOException(e);
             }
-        }
-    }
-
-    public static class Folders {
-        private Folder source;
-        private Folder destination;
-
-        public Folders(Folder source, Folder destination) {
-            this.source = source;
-            this.destination = destination;
         }
     }
 
@@ -111,7 +78,7 @@ public class Synchronizer {
         Map<String, Entry> destinationMap = destinationList.stream().collect(Collectors.toMap(Entry::getName, Function.identity()));
         Set<String> destinationNames = new HashSet<>(destinationMap.keySet());
         for (Entry entry : sourceList) {
-            if (!parameters.getFilter().test(entry)) {
+            if (!context.params().filter().test(entry)) {
                 skip(entry);
                 continue;
             }
@@ -121,7 +88,7 @@ public class Synchronizer {
                 if (entry.isFile() && !destinationEntry.isFile() || (entry.isFolder() && !destinationEntry.isFolder())) {
                     deleteAndCopy(destinationEntry, entry);
                 } else if (entry.isFile()) {
-                    if (!parameters.getFileComparator().areSame(entry.asFile(), destinationEntry.asFile())) {
+                    if (!context.params().fileComparator().areSame(entry.asFile(), destinationEntry.asFile())) {
                         compareFiles(entry.asFile(), destinationEntry.asFile());
                     } else {
 //                        System.out.println("File " + destinationEntry.getParentPath()+ "/" + destinationEntry.getName() + " is ok");
@@ -162,9 +129,9 @@ public class Synchronizer {
 
     private <T> Future<T> doAction(Event.Action action, Callable<T> call, ExecutorService executorService) throws IOException {
         return executorService.submit(() -> {
-            listener.accept(new Event(Event.Type.START, action));
+//            listener.accept(new Event(action, Status.STARTED));
             T result = call.call();
-            listener.accept(new Event(Event.Type.END, action));
+//            listener.accept(new Event(action, Status.ENDED));
             return result;
         });
     }

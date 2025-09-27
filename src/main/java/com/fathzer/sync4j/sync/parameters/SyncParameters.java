@@ -8,6 +8,7 @@ import com.fathzer.sync4j.Entry;
 import jakarta.annotation.Nonnull;
 
 public class SyncParameters {
+    private boolean dryRun;
     private Predicate<Entry> filter;
     private FileComparator fileComparator;
     private PerformanceParameters performance;
@@ -29,29 +30,41 @@ public class SyncParameters {
     }
    
     @Nonnull
-    public Predicate<Entry> getFilter() {
+    public Predicate<Entry> filter() {
         return filter;
     }
     
-    public void setFilter(Predicate<Entry> filter) {
+    public SyncParameters filter(Predicate<Entry> filter) {
         this.filter = filter;
+        return this;
     }
     
     @Nonnull
-    public FileComparator getFileComparator() {
+    public FileComparator fileComparator() {
         return fileComparator;
     }
     
-    public void setFileComparator(@Nonnull FileComparator fileComparator) {
+    public SyncParameters fileComparator(@Nonnull FileComparator fileComparator) {
         this.fileComparator = fileComparator;
+        return this;
     }
     
     @Nonnull
-    public PerformanceParameters getPerformance() {
+    public PerformanceParameters performance() {
         return performance;
     }
     
-    public void setPerformance(@Nonnull PerformanceParameters performance) {
+    public SyncParameters performance(@Nonnull PerformanceParameters performance) {
         this.performance = performance;
+        return this;
     }
+    
+    public boolean dryRun() {
+        return dryRun;
+    }
+    
+    public SyncParameters dryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+        return this;
+    }  
 }

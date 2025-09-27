@@ -2,7 +2,7 @@ package com.fathzer.sync4j.sync.parameters;
 
 public class PerformanceParameters {
     private boolean fastList;
-    private int maxTransferThreads;
+    private int maxCopyThreads;
     private int maxComparisonThreads;
     
     /**
@@ -11,31 +11,34 @@ public class PerformanceParameters {
      * Default values are {@link #setMaxTransferThreads(int)} = 1 and {@link #setMaxComparisonThreads(int)} = 1.
      */
     public PerformanceParameters() {
-        this.maxTransferThreads = 1;
+        this.maxCopyThreads = 1;
         this.maxComparisonThreads = 1;
     }
     
-    public boolean isFastList() {
+    public boolean fastList() {
         return fastList;
     }
     
-    public void setFastList(boolean fastList) {
+    public PerformanceParameters fastList(boolean fastList) {
         this.fastList = fastList;
+        return this;
     }
     
-    public int getMaxTransferThreads() {
-        return maxTransferThreads;
+    public int maxCopyThreads() {
+        return maxCopyThreads;
     }
     
-    public void setMaxTransferThreads(int maxTransferThreads) {
-        this.maxTransferThreads = maxTransferThreads;
+    public PerformanceParameters maxCopyThreads(int maxCopyThreads) {
+        this.maxCopyThreads = maxCopyThreads;
+        return this;
     }
     
-    public int getMaxComparisonThreads() {
+    public int maxComparisonThreads() {
         return maxComparisonThreads;
     }
     
-    public void setMaxComparisonThreads(int maxComparisonThreads) {
+    public PerformanceParameters maxComparisonThreads(int maxComparisonThreads) {
         this.maxComparisonThreads = maxComparisonThreads;
+        return this;
     }
 }
