@@ -14,8 +14,10 @@ public class PreloadTask extends Task {
 
     public void execute() throws IOException {
         if (source) {
+            System.out.println("Preloading source");
             folders.source = folders.source.preload();
         } else {
+            System.out.println("Preloading destination");
             folders.destination = folders.destination.preload();
         }
     }

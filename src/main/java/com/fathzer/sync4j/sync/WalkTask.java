@@ -2,6 +2,7 @@ package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,8 @@ import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
 
 class WalkTask extends RecursiveAction {
+	private static final long serialVersionUID = 1L;
+	
     private final Context context;
     private final Folder sourceFolder;
     private final Folder destinationFolder;
@@ -38,7 +41,7 @@ class WalkTask extends RecursiveAction {
 
     private void process() throws IOException {
         List<Entry> sourceList = sourceFolder.list();
-        System.out.println("Find " + sourceList.size() + " files to process");
+        System.out.println("Find " + sourceList.size() + " files to process " + sourceFolder);
         if (destinationList == null) destinationList = destinationFolder.list();
         Map<String, Entry> destinationMap = destinationList.stream().collect(Collectors.toMap(Entry::getName, Function.identity()));
         Set<String> destinationNames = new HashSet<>(destinationMap.keySet());
@@ -52,25 +55,33 @@ class WalkTask extends RecursiveAction {
                 Entry destinationEntry = destinationMap.get(srcEntry.getName());
                 if (srcEntry.isFile()) {
                     final File src = srcEntry.asFile();
-                    if (!destinationEntry.exists()) {
-                        context.doCopyTask(new CopyFileTask(context, src, destinationFolder));
-                    } else if (destinationEntry.isFile()) {
+                    if (destinationEntry.isFile()) {
                         context.doCheckTask(new CompareFileTask(context, src, destinationFolder, destinationEntry.asFile()));
                     } else {
                         // Destination entry is a folder
-                        context.doCopyTask(new DeleteThenCopyTask(context, destinationEntry.asFile(), src, destinationFolder));
+                        context.doCopyTask(new DeleteThenCopyTask(context, destinationEntry, src, destinationFolder));
                     }
                 } else {
                     final Folder src = srcEntry.asFolder();
                     if (destinationEntry.isFolder()) {
                         new WalkTask(context, src, destinationEntry.asFolder(), null).fork();
                     } else {
-                        deleteAndCopy(destinationEntry, srcEntry);
+                        // Destination entry is a file
+                        // Delete the file and create the folder
+                        new DeleteTask(context, destinationEntry).execute();
+                        destinationEntry = createFolder(destinationFolder, srcEntry.getName());
+                        // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
+                        new WalkTask(context, src, destinationEntry.asFolder(), List.of()).fork();
                     }
                 }
             } else {
-                // Destination entry does not exist
-                createAndCopyEntry(destinationFolder, srcEntry);
+                if (srcEntry.isFile()) {
+                    context.doCopyTask(new CopyFileTask(context, srcEntry.asFile(), destinationFolder));
+                } else {
+                    Folder destinationEntry = createFolder(destinationFolder, srcEntry.getName());
+                    // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
+                    new WalkTask(context, srcEntry.asFolder(), destinationEntry, List.of()).fork();
+                }
             }
         }
         // Remaining destination entries have to be deleted
@@ -80,6 +91,14 @@ class WalkTask extends RecursiveAction {
         }
     }
 
+    private Folder createFolder(Folder destinationFolder, String name) throws IOException {
+System.out.println("Creating folder " + Paths.get(destinationFolder.getParentPath(), destinationFolder.getName(), name));
+        if (!context.params().dryRun()) {
+            return destinationFolder.mkdir(name);
+        }
+        return new DryRunFolder(Paths.get(destinationFolder.getParentPath(), destinationFolder.getName(), name));
+    }
+
     private void skip(Entry entry) throws IOException {
         System.out.println("Skipping " + entry.getParentPath()+ "/" + entry.getName());
     }
@@ -87,7 +106,7 @@ class WalkTask extends RecursiveAction {
     private void deleteFile(Entry entry) throws IOException {
         context.listener.accept(new Event(Event.Type.DELETE, entry));
     }
-*/
+
     private void createAndCopyEntry(Folder destinationFolder, Entry source) throws IOException {
 //        context.listener.accept(new Event(Event.Type.CREATE, source));
     }

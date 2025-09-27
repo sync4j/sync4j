@@ -14,6 +14,7 @@ public class DeleteTask extends Task {
 
     @Override
     public void execute() throws IOException {
+        System.out.println("Deleting " + entry.getParentPath()+ "/" + entry.getName());
         // TODO: progress listener
         if (!context().params().dryRun()) {
             entry.delete();

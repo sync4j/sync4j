@@ -1,6 +1,5 @@
 package com.fathzer.sync4j.sync;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -11,13 +10,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -25,9 +19,7 @@ import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.Event;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
-import com.fathzer.sync4j.Event.Action;
-import com.fathzer.sync4j.Event.ListAction;
-import com.fathzer.sync4j.Event.Status;
+
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 import jakarta.annotation.Nonnull;
@@ -50,7 +42,12 @@ public class Synchronizer {
         if (context.params().performance().fastList()) {
             doPreload(folders);
         }
-        synchronizeFolder(folders.source, folders.destination, null);
+        ForkJoinTask<Void> task = context.walkService().submit(new WalkTask(context, source, destination, null));
+        try {
+            task.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IOException(e);
+        }
     }
 
     private void doPreload(Folders folders) throws IOException {
@@ -70,7 +67,7 @@ public class Synchronizer {
             }
         }
     }
-
+/*
     private void synchronizeFolder(Folder sourceFolder, Folder destinationFolder, List<Entry> destinationList) throws IOException {
         List<Entry> sourceList = sourceFolder.list();
         System.out.println("Find " + sourceList.size() + " files to process");
@@ -134,6 +131,6 @@ public class Synchronizer {
 //            listener.accept(new Event(action, Status.ENDED));
             return result;
         });
-    }
+    }*/
 }
 

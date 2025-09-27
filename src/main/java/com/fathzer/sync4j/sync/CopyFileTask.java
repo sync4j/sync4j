@@ -16,6 +16,7 @@ public class CopyFileTask extends Task {
     }
 
     public void execute() throws IOException {
+        System.out.println("Copying " + source.getParentPath()+ "/" + source.getName() + " to " + destination.getParentPath()+ "/" + destination.getName());
         // TODO: progress listener
         if (!context().params().dryRun()) {
             destination.copy(source.getName(), source, null);
