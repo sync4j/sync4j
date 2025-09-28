@@ -3,11 +3,16 @@ package com.fathzer.sync4j.sync;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-abstract class Task implements Runnable {
+import com.fathzer.sync4j.sync.Statistics.Counter;
+
+abstract class Task<V> implements Runnable {
     private final Context context;
+    protected final Counter counter;
     
-    protected Task(Context context) {
+    protected Task(Context context, Counter counter) {
         this.context = context;
+        this.counter = counter;
+        counter.total().incrementAndGet();
     }
     
     Context context() {
@@ -22,5 +27,5 @@ abstract class Task implements Runnable {
         }
     }
 
-    public abstract void execute() throws IOException;
+    protected abstract V execute() throws IOException;
 }

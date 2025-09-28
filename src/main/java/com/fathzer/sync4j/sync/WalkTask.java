@@ -2,7 +2,6 @@ package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,7 @@ class WalkTask extends RecursiveAction {
         Set<String> destinationNames = new HashSet<>(destinationMap.keySet());
         for (Entry srcEntry : sourceList) {
             if (!context.params().filter().test(srcEntry)) {
-                skip(srcEntry);
+                context.skip(srcEntry);
                 continue;
             }
             if (context.isCancelled()) return;
@@ -57,10 +56,10 @@ class WalkTask extends RecursiveAction {
                 if (srcEntry.isFile()) {
                     final File src = srcEntry.asFile();
                     if (destinationEntry.isFile()) {
-                        context.doCheckTask(new CompareFileTask(context, src, destinationFolder, destinationEntry.asFile()));
+                        context.doCheck(src, destinationFolder, destinationEntry.asFile());
                     } else {
                         // Destination entry is a folder
-                        context.doCopyTask(new DeleteThenCopyTask(context, destinationEntry, src, destinationFolder));
+                        context.doDeleteThenCopy(destinationEntry.asFolder(), destinationFolder, src);
                     }
                 } else {
                     final Folder src = srcEntry.asFolder();
@@ -69,17 +68,17 @@ class WalkTask extends RecursiveAction {
                     } else {
                         // Destination entry is a file
                         // Delete the file and create the folder
-                        new DeleteTask(context, destinationEntry).execute();
-                        destinationEntry = createFolder(destinationFolder, srcEntry.getName());
+                        context.doDelete(destinationEntry, false);
+                        destinationEntry = context.createFolder(destinationFolder, srcEntry.getName());
                         // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
                         new WalkTask(context, src, destinationEntry.asFolder(), List.of()).fork();
                     }
                 }
             } else {
                 if (srcEntry.isFile()) {
-                    context.doCopyTask(new CopyFileTask(context, srcEntry.asFile(), destinationFolder));
+                    context.doCopy(srcEntry.asFile(), destinationFolder);
                 } else {
-                    Folder destinationEntry = createFolder(destinationFolder, srcEntry.getName());
+                    Folder destinationEntry = context.createFolder(destinationFolder, srcEntry.getName());
                     // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
                     new WalkTask(context, srcEntry.asFolder(), destinationEntry, List.of()).fork();
                 }
@@ -89,22 +88,11 @@ class WalkTask extends RecursiveAction {
         // Remaining destination entries have to be deleted
         for (String name : destinationNames) {
            Entry entry = destinationMap.get(name);
-           context.doCopyTask(new DeleteTask(context, entry));
+           context.doDelete(entry, true);
         }
         System.out.println("End walking through " + sourceFolder);
     }
 
-    private Folder createFolder(Folder destinationFolder, String name) throws IOException {
-System.out.println("Creating folder " + Paths.get(destinationFolder.getParentPath(), destinationFolder.getName(), name));
-        if (!context.params().dryRun()) {
-            return destinationFolder.mkdir(name);
-        }
-        return new DryRunFolder(Paths.get(destinationFolder.getParentPath(), destinationFolder.getName(), name));
-    }
-
-    private void skip(Entry entry) throws IOException {
-        System.out.println("Skipping " + entry.getParentPath()+ "/" + entry.getName());
-    }
 /*
     private void deleteFile(Entry entry) throws IOException {
         context.listener.accept(new Event(Event.Type.DELETE, entry));

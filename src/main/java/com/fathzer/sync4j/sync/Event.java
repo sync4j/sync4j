@@ -1,4 +1,6 @@
-package com.fathzer.sync4j;
+package com.fathzer.sync4j.sync;
+
+import com.fathzer.sync4j.Folder;
 
 public record Event(Action action, Status status) {
     public enum Status {

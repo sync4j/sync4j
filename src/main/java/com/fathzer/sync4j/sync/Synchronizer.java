@@ -38,6 +38,10 @@ public class Synchronizer implements AutoCloseable {
         }
     }
 
+    public Statistics getStatistics() {
+    	return context.statistics();
+    }
+    
     public void cancel() {
         context.cancel();
     }
@@ -56,10 +60,10 @@ public class Synchronizer implements AutoCloseable {
     private void doPreload(Folders folders, ForkJoinPool walkService) throws ExecutionException, InterruptedException {
         List<Future<?>> futures = new LinkedList<>();
         if (folders.source.getFileProvider().isFastListSupported()) {
-            futures.add(walkService.submit(new PreloadTask(context, folders, true)));
+            futures.add(walkService.submit(new PreloadTask(folders, true)));
         }
         if (folders.destination.getFileProvider().isFastListSupported()) {
-            futures.add(walkService.submit(new PreloadTask(context, folders, false)));
+            futures.add(walkService.submit(new PreloadTask(folders, false)));
         }
         for (Future<?> future : futures) {
             future.get();

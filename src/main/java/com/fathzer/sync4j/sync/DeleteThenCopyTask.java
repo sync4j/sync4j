@@ -5,18 +5,22 @@ import java.io.IOException;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.Statistics.Counter;
 
-public class DeleteThenCopyTask extends CopyFileTask {
-    private final Entry destinationEntry;
+public class DeleteThenCopyTask extends Task<Void> {
+    private final DeleteTask deleteTask;
+    private final CopyFileTask copyTask;
 
-    DeleteThenCopyTask(Context context, Entry destinationEntry, File source, Folder destination) {
-        super(context, source, destination);
-        this.destinationEntry = destinationEntry;
+    DeleteThenCopyTask(Context context, Entry toBeDeleted, File source, Folder destination) throws IOException {
+        super(context, new Counter());
+        this.deleteTask = new DeleteTask(context, toBeDeleted);
+        this.copyTask = new CopyFileTask(context, source, destination);
     }
 
     @Override
-    public void execute() throws IOException {
-        new DeleteTask(context(), destinationEntry).execute();
-        super.execute();
+    public Void execute() throws IOException {
+        deleteTask.execute();
+        copyTask.execute();
+        return null;
     }
 }

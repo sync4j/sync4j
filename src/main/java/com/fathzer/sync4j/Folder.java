@@ -40,7 +40,8 @@ public interface Folder extends Entry {
      * If the file already exists, it is overwritten.
      * @param fileName the name of the file to write (can't be empty or null, can't contain path separator)
      * @param content the content of the file to write (can't be null)
-     * @param progressListener an optional listener to track copy progress (can be null)
+     * @param progressListener an optional listener to track copy progress (can be null).
+     * <br>The long sent to the listener is the number of bytes copied since the begining of the copy.
      * @return the copied file
      * @throws IOException if an I/O error occurs
      */
