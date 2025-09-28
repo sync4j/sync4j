@@ -50,6 +50,7 @@ class WalkTask extends RecursiveAction {
                 skip(srcEntry);
                 continue;
             }
+            if (context.isCancelled()) return;
             if (destinationNames.remove(srcEntry.getName())) {
                 // Destination entry exists
                 Entry destinationEntry = destinationMap.get(srcEntry.getName());
@@ -84,11 +85,13 @@ class WalkTask extends RecursiveAction {
                 }
             }
         }
+        if (context.isCancelled()) return;
         // Remaining destination entries have to be deleted
         for (String name : destinationNames) {
            Entry entry = destinationMap.get(name);
            context.doCopyTask(new DeleteTask(context, entry));
         }
+        System.out.println("End walking through " + sourceFolder);
     }
 
     private Folder createFolder(Folder destinationFolder, String name) throws IOException {
