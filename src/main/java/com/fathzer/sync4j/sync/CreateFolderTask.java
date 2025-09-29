@@ -2,29 +2,31 @@ package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.function.Supplier;
 
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.Event.CreateFolderAction;
 
-public class CreateFolderTask extends Task<Folder> {
-    private final Folder destination;
-    private final String name;
+public class CreateFolderTask extends Task<Folder, CreateFolderAction> {
 
     CreateFolderTask(Context context, Folder destination, String name) {
-        super(context, context.statistics().createdFolders());
-        this.destination = destination;
-        this.name = name;
+        super(context, new CreateFolderAction(destination, name), context.statistics().createdFolders());
     }
 
     @Override
     public Folder execute() throws IOException {
-        System.out.println("Creating folder " + destination.getParentPath()+ "/" + destination.getName() + "/" + name);
-        final Folder folder;
-        if (context().params().dryRun()) {
-            folder = new DryRunFolder(Paths.get(destination.getParentPath(), destination.getName(), name));
-        } else {
-            folder = destination.mkdir(name);
-            counter.done().incrementAndGet();
-        }
-        return folder;
+        System.out.println("Thread " + Thread.currentThread().getName() + ": Creating folder " + action.folder().getParentPath()+ "/" + action.folder().getName() + "/" + action.name());
+        return action.folder().mkdir(action.name());
+    }
+
+    @Override
+    protected Folder getDefaultValue() throws IOException {
+        return new DryRunFolder(Paths.get(action.folder().getParentPath(), action.folder().getName(), action.name()));
+    }
+
+    @Override
+    protected Supplier<Folder> buildAsyncSupplier() {
+        // Prevent the task to be executed asynchronously
+        throw new UnsupportedOperationException();
     }
 }

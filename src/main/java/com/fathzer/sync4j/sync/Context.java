@@ -1,6 +1,8 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
@@ -32,10 +34,10 @@ class Context implements AutoCloseable {
     }
 
     private final SyncParameters syncParameters;
-    private final ExecutorService checkService;
-    private final ExecutorService copyService;
+    final ExecutorService checkService;
+    final ExecutorService copyService;
     private final AtomicBoolean cancelled = new AtomicBoolean();
-    private final Phaser phaser = new Phaser();
+    final Phaser phaser = new Phaser();
     private final Statistics statistics = new Statistics();
 
     private final Consumer<Event> listener = System.out::println; //TODO
@@ -62,28 +64,39 @@ class Context implements AutoCloseable {
         }
     }
 
-    void doCheck(File src, Folder destinationFolder, File destinationFile) {
-        submit(checkService, new CompareFileTask(this, src, destinationFolder, destinationFile));
+    void asyncCheckAndCopy(File src, Folder destinationFolder, File destinationFile) {
+        CompletableFuture<Boolean> areSame = new CompareFileTask(this, src, destinationFile).executeAsync();
+        areSame.thenAcceptAsync(same -> {
+            if (Boolean.FALSE.equals(same)) {
+                try {
+                    new CopyFileTask(this, src, destinationFolder).buildAsyncSupplier().get();
+                } catch (IOException e) {
+                    throw new CompletionException(e);
+                }
+            }
+        }, copyService);
     }
 
     Folder createFolder(Folder destination, String name) throws IOException {
-        return new CreateFolderTask(this, destination, name).execute();
+        return new CreateFolderTask(this, destination, name).executeSync();
     }
 
-    void doCopy(File src, Folder destinationFolder) throws IOException {
-        submit(copyService, new CopyFileTask(this, src, destinationFolder));
+    void asyncCopy(File src, Folder destinationFolder) throws IOException {
+        new CopyFileTask(this, src, destinationFolder).executeAsync();
     }
 
-    void doDelete(Entry entry, boolean background) throws IOException {
-        if (background) {
-            submit(copyService, new DeleteTask(this, entry));
-        } else {
-            new DeleteTask(this, entry).execute();
-        }
+    void asyncDelete(Entry entry) throws IOException {
+        new DeleteTask(this, entry).executeAsync();
     }
 
-    void doDeleteThenCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) throws IOException {
-        submit(copyService, new DeleteThenCopyTask(this, toBeDeleted, source, toBeDeleteParent));
+    void deleteThenAsyncCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) throws IOException {
+        new DeleteTask(this, toBeDeleted).executeSync();
+        new CopyFileTask(this, source, toBeDeleteParent).executeAsync();
+    }
+
+    Folder deleteThenCreate(File toBeDeleted, Folder toBeDeleteParent, Folder source) throws IOException {
+        new DeleteTask(this, toBeDeleted).executeSync();
+        return createFolder(toBeDeleteParent, source.getName());
     }
 
     void cancel() {
@@ -92,25 +105,6 @@ class Context implements AutoCloseable {
 
     boolean isCancelled() {
         return cancelled.get();
-    }
-
-    private void submit(ExecutorService executor, Task<?> task) {
-        phaser.register();
-        executor.execute(() -> {
-            try {
-                if (!cancelled.get()) {
-                    task.run();
-                }
-            } finally {
-                try {
-                    phaser.arriveAndDeregister();
-                } catch (IllegalStateException e) {
-                    System.out.println("Exception while deregistering from phaser task: " + task);
-                    e.printStackTrace();
-                }
-                System.out.println("Thread " + Thread.currentThread().getName() + ": It remains " + phaser.getUnarrivedParties() + " tasks");
-            }
-        });
     }
 
     void waitFor() {

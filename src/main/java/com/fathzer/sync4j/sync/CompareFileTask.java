@@ -1,28 +1,33 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 import com.fathzer.sync4j.File;
-import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.Event.CompareFileAction;
 
-public class CompareFileTask extends Task<Void> {
-    private final File source;
-    private final Folder destinationFolder;
-    private final File destination;
-
-    CompareFileTask(Context context, File source, Folder destinationFolder, File destination) {
-        super(context, context.statistics().checkedFiles());
-        this.source = source;
-        this.destinationFolder = destinationFolder;
-        this.destination = destination;
+public class CompareFileTask extends Task<Boolean, CompareFileAction> {
+    CompareFileTask(Context context, File source, File destination) {
+        super(context, new CompareFileAction(source, destination), context.statistics().checkedFiles());
     }
 
-    public Void execute() throws IOException {
-        boolean areSame = context().params().fileComparator().areSame(source, destination);
-        counter.done().incrementAndGet();
-        if (!areSame) {
-            context().doCopy(source, destinationFolder);
-        }
-        return null;
+    @Override
+    protected Boolean getDefaultValue() {
+        return true;
+    }
+
+    @Override
+    protected Boolean execute() throws IOException {
+        return context().params().fileComparator().areSame(action.source(), action.destination());
+    }
+
+    @Override
+    protected boolean skipOnDryRun() {
+        return false;
+    }
+
+    @Override
+    protected ExecutorService executorService() {
+        return context().checkService;
     }
 }

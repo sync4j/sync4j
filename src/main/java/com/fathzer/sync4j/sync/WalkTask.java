@@ -56,10 +56,10 @@ class WalkTask extends RecursiveAction {
                 if (srcEntry.isFile()) {
                     final File src = srcEntry.asFile();
                     if (destinationEntry.isFile()) {
-                        context.doCheck(src, destinationFolder, destinationEntry.asFile());
+                        context.asyncCheckAndCopy(src, destinationFolder, destinationEntry.asFile());
                     } else {
                         // Destination entry is a folder
-                        context.doDeleteThenCopy(destinationEntry.asFolder(), destinationFolder, src);
+                        context.deleteThenAsyncCopy(destinationEntry.asFolder(), destinationFolder, src);
                     }
                 } else {
                     final Folder src = srcEntry.asFolder();
@@ -68,15 +68,14 @@ class WalkTask extends RecursiveAction {
                     } else {
                         // Destination entry is a file
                         // Delete the file and create the folder
-                        context.doDelete(destinationEntry, false);
-                        destinationEntry = context.createFolder(destinationFolder, srcEntry.getName());
+                        destinationEntry = context.deleteThenCreate(destinationEntry.asFile(), destinationFolder, src);
                         // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
                         new WalkTask(context, src, destinationEntry.asFolder(), List.of()).fork();
                     }
                 }
             } else {
                 if (srcEntry.isFile()) {
-                    context.doCopy(srcEntry.asFile(), destinationFolder);
+                    context.asyncCopy(srcEntry.asFile(), destinationFolder);
                 } else {
                     Folder destinationEntry = context.createFolder(destinationFolder, srcEntry.getName());
                     // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
@@ -88,27 +87,8 @@ class WalkTask extends RecursiveAction {
         // Remaining destination entries have to be deleted
         for (String name : destinationNames) {
            Entry entry = destinationMap.get(name);
-           context.doDelete(entry, true);
+           context.asyncDelete(entry);
         }
         System.out.println("End walking through " + sourceFolder);
     }
-
-/*
-    private void deleteFile(Entry entry) throws IOException {
-        context.listener.accept(new Event(Event.Type.DELETE, entry));
-    }
-
-    private void createAndCopyEntry(Folder destinationFolder, Entry source) throws IOException {
-//        context.listener.accept(new Event(Event.Type.CREATE, source));
-    }
-
-    private void deleteAndCopy(Entry destinationEntry, Entry source) throws IOException {
-        // context.listener.accept(new Event(Event.Type.DELETE, destinationEntry));
-        // context.listener.accept(new Event(Event.Type.CREATE, source));
-    }
-/*
-    private void compareFiles(File source, File destination) throws IOException {
-        context.listener.accept(new Event(Event.Type.COMPARE, source));
-    }
-*/
 }
