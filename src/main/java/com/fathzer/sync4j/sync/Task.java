@@ -12,11 +12,13 @@ import com.fathzer.sync4j.sync.Statistics.Counter;
 abstract class Task<V, A extends Action> {
     private final Context context;
     protected final A action;
+    protected final Event event;
     protected final Counter counter;
     
     protected Task(Context context, A action, Counter counter) {
         this.context = context;
         this.action = action;
+        this.event = context.createEvent(action);
         this.counter = counter;
         counter.total().incrementAndGet();
     }
@@ -37,9 +39,17 @@ abstract class Task<V, A extends Action> {
 
     final V executeSync() throws IOException {
         if (context.isCancelled() || (context().params().dryRun() && skipOnDryRun())) return getDefaultValue();
-        V result = execute();
-        counter.done().incrementAndGet();
-        return result;
+        context.update(event, Event.Status.STARTED);
+        try {
+            V result = execute();
+            context.update(event, Event.Status.COMPLETED);
+            counter.done().incrementAndGet();
+            return result;
+        } finally {
+            if (event.getStatus() != Event.Status.COMPLETED) {
+                context.update(event, Event.Status.FAILED);
+            }
+        }
     }
 
     protected CompletableFuture<V> executeAsync() {

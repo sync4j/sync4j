@@ -9,7 +9,6 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
@@ -39,8 +38,6 @@ class Context implements AutoCloseable {
     private final AtomicBoolean cancelled = new AtomicBoolean();
     final Phaser phaser = new Phaser();
     private final Statistics statistics = new Statistics();
-
-    private final Consumer<Event> listener = System.out::println; //TODO
 
     Context(SyncParameters parameters) {
         this.syncParameters = parameters;
@@ -85,7 +82,7 @@ class Context implements AutoCloseable {
         new CopyFileTask(this, src, destinationFolder).executeAsync();
     }
 
-    void asyncDelete(Entry entry) throws IOException {
+    void asyncDelete(Entry entry) {
         new DeleteTask(this, entry).executeAsync();
     }
 
@@ -107,10 +104,19 @@ class Context implements AutoCloseable {
         return cancelled.get();
     }
 
+    Event createEvent(Event.Action action) {
+        final Event event = new Event(action);
+        syncParameters.eventListener().accept(event);
+        return event;
+    }
+
+    void update(Event event, Event.Status status) {
+        event.setStatus(status);
+        syncParameters.eventListener().accept(event);
+    }
+
     void waitFor() {
-        System.out.println("Waiting for " + phaser.getUnarrivedParties() + " tasks to finish");
         phaser.awaitAdvance(phaser.getPhase());
-        System.out.println("All tasks finished");
     }
 
     public void close() {

@@ -8,7 +8,7 @@ public class PerformanceParameters {
     /**
      * Creates a new instance of PerformanceParameters.
      * <br>
-     * Default values are {@link #setMaxTransferThreads(int)} = 1 and {@link #setMaxComparisonThreads(int)} = 1.
+     * Default values are {@link #maxCopyThreads(int)} = 1 and {@link #maxComparisonThreads(int)} = 1.
      */
     public PerformanceParameters() {
         this.maxCopyThreads = 1;

@@ -35,4 +35,9 @@ Import with Maven:
 </dependency>
 ```
 
-    
+## TODO
+- [x] Add access to statistics
+- [x] Add event listener
+- [x] Fix copied byte count during copy
+- [ ] Add exception handling
+- [ ] Add progress reporting in CopyAction
