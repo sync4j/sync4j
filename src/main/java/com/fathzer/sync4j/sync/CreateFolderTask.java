@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Event.CreateFolderAction;
 
-public class CreateFolderTask extends Task<Folder, CreateFolderAction> {
+class CreateFolderTask extends Task<Folder, CreateFolderAction> {
 
     CreateFolderTask(Context context, Folder destination, String name) {
         super(context, new CreateFolderAction(destination, name), context.statistics().createdFolders());

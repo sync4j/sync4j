@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.sync.Event.DeleteEntryAction;
 
-public class DeleteTask extends Task<Void, DeleteEntryAction> {
+class DeleteTask extends Task<Void, DeleteEntryAction> {
     private final Entry entry;
 
     DeleteTask(Context context, Entry entry) {

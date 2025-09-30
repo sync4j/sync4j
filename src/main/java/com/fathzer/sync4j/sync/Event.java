@@ -1,10 +1,16 @@
 package com.fathzer.sync4j.sync;
 
+import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
+
+import jakarta.annotation.Nonnull;
 
 public class Event {
     public enum Status {
@@ -46,73 +52,155 @@ public class Event {
         this.status = status;
     }
 
+    /**
+     * Action to compare two files.
+     */
     public static final class CompareFileAction extends Action {
         private final File source;
         private final File destination;
-        CompareFileAction(File source, File destination) {
-            this.source = source;
-            this.destination = destination;
+        CompareFileAction(@Nonnull File source, @Nonnull File destination) {
+            this.source = Objects.requireNonNull(source);
+            this.destination = Objects.requireNonNull(destination);
         }
+        /**
+         * Returns the source file.
+         * @return the source file
+         */
+        @Nonnull
         public File source() {
             return source;
         }
+        /**
+         * Returns the destination file.
+         * @return the destination file
+         */
+        @Nonnull
         public File destination() {
             return destination;
         }
     }
 
+    /**
+     * Action to copy a file to a destination folder.
+     */
     public static final class CopyFileAction extends Action {
         private final File source;
         private final Folder destination;
-        CopyFileAction(File source, Folder destination) {
-            this.source = source;
-            this.destination = destination;
+        private final long size;
+        private LongConsumer progressListener;
+
+        CopyFileAction(@Nonnull File source, @Nonnull Folder destination) throws IOException {
+            this.source = Objects.requireNonNull(source);
+            this.destination = Objects.requireNonNull(destination);
+            this.size = source.getSize();
+            this.progressListener = null;
         }
+        /**
+         * Returns the source file.
+         * @return the source file
+         */
+        @Nonnull
         public File source() {
             return source;
         }
+        /**
+         * Returns the destination folder.
+         * @return the destination folder
+         */
+        @Nonnull
         public Folder destination() {
             return destination;
         }
+        /**
+         * Returns the size of the file to copy.
+         * @return a long
+         */
+        public long size() {
+            return size;
+        }
+        /**
+         * Sets the progress listener.
+         * @param progressListener the progress listener
+         * <br>
+         * The progress listener is called during the copy with the number of bytes already copied.
+         * The frequency of the calls depends on the {@link FileProvider} implementation.
+         */
+        public void setProgressListener(@Nonnull LongConsumer progressListener) {
+            this.progressListener = Objects.requireNonNull(progressListener);
+        }
+        @Nonnull
+        LongConsumer progressListener() {
+            return progressListener;
+        }
     }
 
+    /**
+     * Action to create a folder.
+     */
     public static final class CreateFolderAction extends Action {
         private final Folder folder;
         private final String name;
-        CreateFolderAction(Folder folder, String name) {
-            this.folder = folder;
-            this.name = name;
+        CreateFolderAction(@Nonnull Folder folder, @Nonnull String name) {
+            this.folder = Objects.requireNonNull(folder);
+            this.name = Objects.requireNonNull(name);
         }
+        /**
+         * Returns the folder where the folder to create is located.
+         * @return A Folder instance
+         */
+        @Nonnull
         public Folder folder() {
             return folder;
         }
+        /**
+         * Returns the name of the folder to create.
+         * @return the name of the folder to create
+         */
+        @Nonnull
         public String name() {
             return name;
         }
     }
 
+    /**
+     * Action to delete an entry.
+     */
     public static final class DeleteEntryAction extends Action {
         private final Entry entry;
-        DeleteEntryAction(Entry entry) {
-            this.entry = entry;
+        DeleteEntryAction(@Nonnull Entry entry) {
+            this.entry = Objects.requireNonNull(entry);
         }
+        /**
+         * Returns the entry to delete.
+         * @return An Entry instance
+         */
+        @Nonnull
         public Entry entry() {
             return entry;
         }
     }
 
-    public static final class ListAction extends Action {
-        private final Folder folder;
-        private final boolean recursive;
-        ListAction(Folder folder, boolean recursive) {
-            this.folder = folder;
-            this.recursive = recursive;
-        }
-        public Folder folder() {
-            return folder;
-        }
-        public boolean recursive() {
-            return recursive;
-        }
-    }
+    // public static final class ListAction extends Action {
+    //     private final Folder folder;
+    //     private final boolean recursive;
+    //     ListAction(@Nonnull Folder folder, boolean recursive) {
+    //         this.folder = Objects.requireNonNull(folder);
+    //         this.recursive = recursive;
+    //     }
+    //     /**
+    //      * Returns the folder to list.
+    //      * @return A Folder instance
+    //      */
+    //     @Nonnull
+    //     public Folder folder() {
+    //         return folder;
+    //     }
+    //     /**
+    //      * Returns true if the list is recursive.
+    //      * @return true if the list is recursive
+    //      */
+    //     public boolean recursive() {
+    //         return recursive;
+    //     }
+    // }
 }

@@ -40,4 +40,6 @@ Import with Maven:
 - [x] Add event listener
 - [x] Fix copied byte count during copy
 - [ ] Add exception handling
-- [ ] Add progress reporting in CopyAction
+- [x] Add progress reporting in CopyAction
+- [ ] Add a ListFolderAction
+

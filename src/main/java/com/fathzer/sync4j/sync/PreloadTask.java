@@ -3,7 +3,7 @@ package com.fathzer.sync4j.sync;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-public class PreloadTask implements Runnable {
+class PreloadTask implements Runnable {
     private final Folders folders;
     private final boolean source;
     
