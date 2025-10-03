@@ -74,11 +74,11 @@ class Context implements AutoCloseable {
         }, copyService);
     }
 
-    Folder createFolder(Folder destination, String name) throws IOException {
+    Folder createFolder(Folder destination, String name) {
         return new CreateFolderTask(this, destination, name).executeSync();
     }
 
-    void asyncCopy(File src, Folder destinationFolder) throws IOException {
+    void asyncCopy(File src, Folder destinationFolder) {
         new CopyFileTask(this, src, destinationFolder).executeAsync();
     }
 
@@ -86,12 +86,12 @@ class Context implements AutoCloseable {
         new DeleteTask(this, entry).executeAsync();
     }
 
-    void deleteThenAsyncCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) throws IOException {
+    void deleteThenAsyncCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) {
         new DeleteTask(this, toBeDeleted).executeSync();
         new CopyFileTask(this, source, toBeDeleteParent).executeAsync();
     }
 
-    Folder deleteThenCreate(File toBeDeleted, Folder toBeDeleteParent, Folder source) throws IOException {
+    Folder deleteThenCreate(File toBeDeleted, Folder toBeDeleteParent, Folder source) {
         new DeleteTask(this, toBeDeleted).executeSync();
         return createFolder(toBeDeleteParent, source.getName());
     }

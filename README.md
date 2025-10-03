@@ -40,6 +40,9 @@ Import with Maven:
 - [x] Add event listener
 - [x] Fix copied byte count during copy
 - [ ] Add exception handling
+  - [ ] Fix compilation errors in Context  
+    - IOExceptions should be passed to errorManager
+    - The copyTask should probably be refactored to be able to pass Action to errorManager when getSize fails.
 - [x] Add progress reporting in CopyAction
 - [ ] Add a ListFolderAction
 

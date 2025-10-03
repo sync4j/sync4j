@@ -64,7 +64,7 @@ abstract class Task<V, A extends Action> {
         };
         context.phaser.register();
         return CompletableFuture.supplyAsync(supplier, executorService())
-            .exceptionally((e) -> {
+            .exceptionally(e -> {
                 e.printStackTrace(); //TODO
                 return null;
             }

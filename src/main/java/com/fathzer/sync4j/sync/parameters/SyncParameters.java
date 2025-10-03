@@ -2,11 +2,15 @@ package com.fathzer.sync4j.sync.parameters;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.sync.Event;
+import com.fathzer.sync4j.sync.Event.Action;
 
 import jakarta.annotation.Nonnull;
 
@@ -16,6 +20,7 @@ public class SyncParameters {
     private FileComparator fileComparator;
     private PerformanceParameters performance;
     private Consumer<Event> eventListener;
+    private BiPredicate<Throwable, Action> errorManager;
     
     /**
      * Creates a new instance of SyncParameters.
@@ -29,6 +34,11 @@ public class SyncParameters {
         this.performance = new PerformanceParameters();
         this.filter = entry -> true;
         this.eventListener = event -> {};
+        this.errorManager = (ex, a) -> {
+            Logger logger = Logger.getLogger(SyncParameters.class.getName());
+            logger.log(Level.SEVERE, ex, () -> a.toString() + " fails with " + ex.getMessage());
+            return true;
+        };
     }
    
     @Nonnull
@@ -76,6 +86,29 @@ public class SyncParameters {
     @Nonnull
     public SyncParameters eventListener(@Nonnull Consumer<Event> eventListener) {
         this.eventListener = Objects.requireNonNull(eventListener);
+        return this;
+    }
+
+    @Nonnull
+    public BiPredicate<Throwable, Action> errorManager() {
+        return errorManager;
+    }
+
+    /**
+     * Sets the error manager.
+     * <br>
+     * The error manager is called when an error occurs during the execution of a task.
+     * If the error manager returns true, the synchronization is stopped else the exception
+     * is ignored (the action is skipped and default actions's result is returned).
+     * In both cases, the error manager should log the error.
+     * <br>
+     * The default error manager returns true, and logs the error using java logging framework.
+     * @param errorManager the error manager
+     * @return this
+     */
+    @Nonnull
+    public SyncParameters errorManager(@Nonnull BiPredicate<Throwable, Action> errorManager) {
+        this.errorManager = Objects.requireNonNull(errorManager);
         return this;
     }
 }

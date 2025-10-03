@@ -45,43 +45,12 @@ class WalkTask extends RecursiveAction {
         Map<String, Entry> destinationMap = destinationList.stream().collect(Collectors.toMap(Entry::getName, Function.identity()));
         Set<String> destinationNames = new HashSet<>(destinationMap.keySet());
         for (Entry srcEntry : sourceList) {
+            if (context.isCancelled()) return;
             if (!context.params().filter().test(srcEntry)) {
                 context.skip(srcEntry);
                 continue;
             }
-            if (context.isCancelled()) return;
-            if (destinationNames.remove(srcEntry.getName())) {
-                // Destination entry exists
-                Entry destinationEntry = destinationMap.get(srcEntry.getName());
-                if (srcEntry.isFile()) {
-                    final File src = srcEntry.asFile();
-                    if (destinationEntry.isFile()) {
-                        context.asyncCheckAndCopy(src, destinationFolder, destinationEntry.asFile());
-                    } else {
-                        // Destination entry is a folder
-                        context.deleteThenAsyncCopy(destinationEntry.asFolder(), destinationFolder, src);
-                    }
-                } else {
-                    final Folder src = srcEntry.asFolder();
-                    if (destinationEntry.isFolder()) {
-                        new WalkTask(context, src, destinationEntry.asFolder(), null).fork();
-                    } else {
-                        // Destination entry is a file
-                        // Delete the file and create the folder
-                        destinationEntry = context.deleteThenCreate(destinationEntry.asFile(), destinationFolder, src);
-                        // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
-                        new WalkTask(context, src, destinationEntry.asFolder(), List.of()).fork();
-                    }
-                }
-            } else {
-                if (srcEntry.isFile()) {
-                    context.asyncCopy(srcEntry.asFile(), destinationFolder);
-                } else {
-                    Folder destinationEntry = context.createFolder(destinationFolder, srcEntry.getName());
-                    // Spawn a new task to process the folder with empty destination folder (to not call list for nothing)
-                    new WalkTask(context, srcEntry.asFolder(), destinationEntry, List.of()).fork();
-                }
-            }
+            processEntry(destinationMap, destinationNames, srcEntry);
         }
         if (context.isCancelled()) return;
         // Remaining destination entries have to be deleted
@@ -90,5 +59,49 @@ class WalkTask extends RecursiveAction {
            context.asyncDelete(entry);
         }
         System.out.println("End walking through " + sourceFolder);
+    }
+
+    private void processEntry(Map<String, Entry> destinationMap, Set<String> destinationNames, Entry srcEntry) {
+        if (destinationNames.remove(srcEntry.getName())) {
+            // Destination entry exists
+            Entry destinationEntry = destinationMap.get(srcEntry.getName());
+            if (srcEntry.isFile()) {
+                final File src = srcEntry.asFile();
+                if (destinationEntry.isFile()) {
+                    context.asyncCheckAndCopy(src, destinationFolder, destinationEntry.asFile());
+                } else {
+                    // Destination entry is a folder
+                    context.deleteThenAsyncCopy(destinationEntry.asFolder(), destinationFolder, src);
+                }
+            } else {
+                final Folder src = srcEntry.asFolder();
+                if (destinationEntry.isFolder()) {
+                    new WalkTask(context, src, destinationEntry.asFolder(), null).fork();
+                } else {
+                    // Destination entry is a file
+                    // Delete the file and create the folder
+                    destinationEntry = context.deleteThenCreate(destinationEntry.asFile(), destinationFolder, src);
+                    spawnEmptyFolderTask(src, destinationEntry.asFolder());
+                }
+            }
+        } else {
+            if (srcEntry.isFile()) {
+                context.asyncCopy(srcEntry.asFile(), destinationFolder);
+            } else {
+                Folder destinationEntry = context.createFolder(destinationFolder, srcEntry.getName());
+                spawnEmptyFolderTask(srcEntry.asFolder(), destinationEntry);
+            }
+        }
+    }
+
+    /**
+     * Spawns a new task to process the folder with empty destination folder (to not call list for nothing)
+     * @param src the source folder
+     * @param destination the destination folder
+     */
+    void spawnEmptyFolderTask(Folder src, Folder destination) {
+        if (destination!=null) {
+            new WalkTask(context, src, destination, List.of()).fork();
+        }
     }
 }
