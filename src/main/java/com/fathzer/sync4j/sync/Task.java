@@ -1,6 +1,7 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,25 @@ abstract class Task<V, A extends Action> {
         return true;
     }
 
+    //TODO Remove this method
+    private static final Map<Class<?>, String> THREAD_PREFIX = Map.of(
+        CopyFileTask.class, "copy",
+        CompareFileTask.class, "check"
+    );
+    private void checkThread() {
+        final String name = Thread.currentThread().getName();
+        final String expectedPrefix = THREAD_PREFIX.get(this.getClass());
+        if (expectedPrefix != null) {
+            if (!name.startsWith(expectedPrefix)) {
+                System.err.println("!!! Task " + this + " should be executed on " + expectedPrefix + " thread instead of " + name);
+            }
+//        } else {
+//System.out.println("Starting " + action + " on " + Thread.currentThread().getName());
+        }
+    }
+
     final V executeSync() throws IOException {
+        checkThread();
         if (context.isCancelled() || (context().params().dryRun() && skipOnDryRun())) return getDefaultValue();
         context.update(event, Event.Status.STARTED);
         try {
@@ -52,18 +71,9 @@ abstract class Task<V, A extends Action> {
         }
     }
 
+
     protected CompletableFuture<V> executeAsync() {
-        final Supplier<V> supplier = () -> {
-            try {
-                return executeSync();
-            } catch (Exception e) {
-                throw new CompletionException(e);
-            } finally {
-                context.phaser.arriveAndDeregister();
-            }
-        };
-        context.phaser.register();
-        return CompletableFuture.supplyAsync(supplier, executorService())
+        return CompletableFuture.supplyAsync(buildAsyncSupplier(), executorService())
             .exceptionally(e -> {
                 e.printStackTrace(); //TODO
                 return null;

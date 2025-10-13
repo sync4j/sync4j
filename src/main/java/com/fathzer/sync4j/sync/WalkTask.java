@@ -97,7 +97,7 @@ class WalkTask extends RecursiveAction {
     /**
      * Spawns a new task to process the folder with empty destination folder (to not call list for nothing)
      * @param src the source folder
-     * @param destination the destination folder
+     * @param destination the destination folder, if null, the folder will be skipped
      */
     void spawnEmptyFolderTask(Folder src, Folder destination) {
         if (destination!=null) {

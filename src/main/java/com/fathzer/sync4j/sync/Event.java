@@ -1,6 +1,5 @@
 package com.fathzer.sync4j.sync;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
@@ -86,13 +85,11 @@ public class Event {
     public static final class CopyFileAction extends Action {
         private final File source;
         private final Folder destination;
-        private final long size;
         private LongConsumer progressListener;
 
-        CopyFileAction(@Nonnull File source, @Nonnull Folder destination) throws IOException {
+        CopyFileAction(@Nonnull File source, @Nonnull Folder destination) {
             this.source = Objects.requireNonNull(source);
             this.destination = Objects.requireNonNull(destination);
-            this.size = source.getSize();
             this.progressListener = null;
         }
         /**
@@ -110,13 +107,6 @@ public class Event {
         @Nonnull
         public Folder destination() {
             return destination;
-        }
-        /**
-         * Returns the size of the file to copy.
-         * @return a long
-         */
-        public long size() {
-            return size;
         }
         /**
          * Sets the progress listener.

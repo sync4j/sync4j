@@ -1,18 +1,20 @@
 package com.fathzer.sync4j.sync;
 
-import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.Event.Action;
+import com.fathzer.sync4j.sync.Event.CopyFileAction;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class Context implements AutoCloseable {
@@ -61,25 +63,44 @@ class Context implements AutoCloseable {
         }
     }
 
+    private <V, C extends Callable<V>> Result<V> tryExecute(C callable, Supplier<Action> actionSupplier) {
+        try {
+            return new Result<>(callable.call(), false);
+        } catch (Exception e) {
+            if (syncParameters.errorManager().test(e, actionSupplier.get())) {
+                cancel();
+            }
+            return new Result<>(null, true);
+        }
+    }
+
+    private record Result<V>(V value, boolean failed) {}
+
+    /**
+     * Asynchronously copies a file to a destination folder.
+     * @param src the source file
+     * @param destinationFolder the destination folder
+     */
+    void asyncCopy(File src, Folder destinationFolder) {
+        CopyFileAction action = new CopyFileAction(src, destinationFolder);
+        tryExecute(() -> 
+            new CopyFileTask(this, action).executeAsync()
+        , () -> action);
+    }
+
     void asyncCheckAndCopy(File src, Folder destinationFolder, File destinationFile) {
         CompletableFuture<Boolean> areSame = new CompareFileTask(this, src, destinationFile).executeAsync();
         areSame.thenAcceptAsync(same -> {
             if (Boolean.FALSE.equals(same)) {
-                try {
-                    new CopyFileTask(this, src, destinationFolder).buildAsyncSupplier().get();
-                } catch (IOException e) {
-                    throw new CompletionException(e);
-                }
+                asyncCopy(src, destinationFolder);
             }
         }, copyService);
     }
 
     Folder createFolder(Folder destination, String name) {
-        return new CreateFolderTask(this, destination, name).executeSync();
-    }
-
-    void asyncCopy(File src, Folder destinationFolder) {
-        new CopyFileTask(this, src, destinationFolder).executeAsync();
+        final CreateFolderTask task = new CreateFolderTask(this, destination, name);
+        final Result<Folder> result = tryExecute(task::executeSync, () -> task.action);
+        return result.value();
     }
 
     void asyncDelete(Entry entry) {
@@ -87,13 +108,18 @@ class Context implements AutoCloseable {
     }
 
     void deleteThenAsyncCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) {
-        new DeleteTask(this, toBeDeleted).executeSync();
-        new CopyFileTask(this, source, toBeDeleteParent).executeAsync();
+        if (delete(toBeDeleted)) {
+            asyncCopy(source, toBeDeleteParent);
+        }
     }
 
     Folder deleteThenCreate(File toBeDeleted, Folder toBeDeleteParent, Folder source) {
-        new DeleteTask(this, toBeDeleted).executeSync();
-        return createFolder(toBeDeleteParent, source.getName());
+        return delete(toBeDeleted) ? createFolder(toBeDeleteParent, source.getName()) : null;
+    }
+
+    private boolean delete(Entry toBeDeleted) {
+        final DeleteTask deleteTask = new DeleteTask(this, toBeDeleted);
+        return !tryExecute(deleteTask::executeSync, () -> deleteTask.action).failed();
     }
 
     void cancel() {

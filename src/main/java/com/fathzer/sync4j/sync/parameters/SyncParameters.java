@@ -89,6 +89,11 @@ public class SyncParameters {
         return this;
     }
 
+    /**
+     * Gets the error manager.
+     * @return the error manager
+     * @see #errorManager(BiPredicate)
+     */
     @Nonnull
     public BiPredicate<Throwable, Action> errorManager() {
         return errorManager;

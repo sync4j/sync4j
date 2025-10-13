@@ -9,7 +9,10 @@ sync4j is a Java library for synchronizing files and folders.
 
 It is designed as a replacement of the famous [rclone](https://rclone.org/) tool as a reusable library.  
 *rclone* is a very impressive command line program to manage files on various cloud storages ... but has some drawbacks when launched from an application.
-Typically, the root cause of this alternative project is *rclone* command line tool stops sending progress data on stdout when it is used, for instance in a Docker container with no tty. It's http API (launched with `rclone rcd`) misses clear documentation and some important features like file exclusions remains unsupported (or at least undocumented). This makes it unusable in application development if you need to track progress of long synchronizations and exclude files, which seems to be a common use case.
+
+Typically, the root cause of this alternative project is *rclone* command line tool stops sending progress data on stdout when it is used, for instance in a Docker container with no tty. It's http API (launched with `rclone rcd`) misses clear documentation and some important features like file exclusions remains unsupported (or at least undocumented).
+
+This makes it unusable in application development if you need to track progress of long synchronizations and exclude files, which seems to be a common use case.
 
 ## Features
 
@@ -40,9 +43,8 @@ Import with Maven:
 - [x] Add event listener
 - [x] Fix copied byte count during copy
 - [ ] Add exception handling
-  - [ ] Fix compilation errors in Context  
-    - IOExceptions should be passed to errorManager
-    - The copyTask should probably be refactored to be able to pass Action to errorManager when getSize fails.
+  - [x] Fix compilation errors in Context
+  - [ ] IOExceptions in async task should be passed to errorManager
 - [x] Add progress reporting in CopyAction
 - [ ] Add a ListFolderAction
 

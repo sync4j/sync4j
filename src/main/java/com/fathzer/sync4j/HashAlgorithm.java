@@ -27,12 +27,14 @@ public enum HashAlgorithm {
     SHA256("SHA-256");
 
     private final String algorithmName;
-    private final MessageDigest digest;
 
     private HashAlgorithm(@Nonnull String algorithmName) {
         this.algorithmName = algorithmName;
+    }
+
+    private MessageDigest createDigest() {
         try {
-            this.digest = MessageDigest.getInstance(algorithmName);
+            return MessageDigest.getInstance(algorithmName);
         } catch (NoSuchAlgorithmException e) {
             throw new PanicException(e);
         }
@@ -55,7 +57,7 @@ public enum HashAlgorithm {
      */
     @Nonnull
     public String computeHash(@Nonnull byte[] data) {
-        byte[] hashBytes = digest.digest(data);
+        byte[] hashBytes = createDigest().digest(data);
         return bytesToHex(hashBytes);
     }
 
@@ -69,7 +71,8 @@ public enum HashAlgorithm {
      */
     @Nonnull
     public String computeHash(@Nonnull InputStream inputStream) throws IOException {
-        byte[] buffer = new byte[8192];
+        final byte[] buffer = new byte[8192];
+        final MessageDigest digest = createDigest();
         int bytesRead;
         while ((bytesRead = inputStream.read(buffer)) != -1) {
             digest.update(buffer, 0, bytesRead);
