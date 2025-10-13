@@ -51,26 +51,16 @@ class LocalFile implements File, Folder {
     }
 
     @Override
-    public Entry getParent() throws IOException {
-        final Path parent = getRawParentPath();
+    public Entry getParent() {
+        final Path parent = path.getParent();
         return parent == null ? null : new LocalFile(parent);
     }
     
     @Override
-    public String getParentPath() throws IOException {
-        final Path parent = getRawParentPath();
+    public String getParentPath() {
+        final Path parent = path.getParent();
         return parent==null ? null : parent.toString();
     }
-
-    private Path getRawParentPath() throws IOException {
-        final Path parent = path.getParent();
-        if (parent == null) {
-            return null;
-        } else if (Files.isRegularFile(parent)) {
-            throw new IOException("Parent is a file");
-        }
-        return parent;
-    }  
     
     @Override
     public String getName() {

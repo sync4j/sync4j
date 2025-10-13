@@ -38,12 +38,12 @@ class DryRunFolder implements Folder {
     }
 
     @Override
-    public Entry getParent() throws IOException {
+    public Entry getParent() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getParentPath() throws IOException {
+    public String getParentPath() {
         final Path parent = path.getParent();
         return parent==null ? null : parent.toString();    }
 

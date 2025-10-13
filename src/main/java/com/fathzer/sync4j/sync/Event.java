@@ -77,6 +77,11 @@ public class Event {
         public File destination() {
             return destination;
         }
+
+        @Override
+        public String toString() {
+            return "CompareFileAction{source=" + source +", destination=" + destination +'}';
+        }
     }
 
     /**

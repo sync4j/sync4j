@@ -2,6 +2,7 @@ package com.fathzer.sync4j.sync;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
@@ -67,10 +68,17 @@ class Context implements AutoCloseable {
         try {
             return new Result<>(callable.call(), false);
         } catch (Exception e) {
-            if (syncParameters.errorManager().test(e, actionSupplier.get())) {
-                cancel();
-            }
-            return new Result<>(null, true);
+            processError(e, actionSupplier.get());
+        }
+        return new Result<>(null, true);
+    }
+
+    void processError(Throwable e, Action action) {
+        if (e instanceof CompletionException) {
+            e = e.getCause();
+        }
+        if (syncParameters.errorManager().test(e, action)) {
+            cancel();
         }
     }
 

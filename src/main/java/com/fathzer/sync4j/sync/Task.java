@@ -75,7 +75,7 @@ abstract class Task<V, A extends Action> {
     protected CompletableFuture<V> executeAsync() {
         return CompletableFuture.supplyAsync(buildAsyncSupplier(), executorService())
             .exceptionally(e -> {
-                e.printStackTrace(); //TODO
+                context.processError(e, action);
                 return null;
             }
         );
