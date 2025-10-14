@@ -38,13 +38,10 @@ Import with Maven:
 </dependency>
 ```
 
-## TODO
-- [x] Add access to statistics
-- [x] Add event listener
-- [x] Fix copied byte count during copy
-- [ ] Add exception handling
-  - [x] Fix compilation errors in Context
-  - [ ] IOExceptions in async task should be passed to errorManager
-- [x] Add progress reporting in CopyAction
-- [ ] Add a ListFolderAction
+If you need to use a provider other than local, you should add the corresponding dependency.
 
+## Usage
+
+```java
+//TODO
+```

@@ -1,28 +1,31 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.util.concurrent.ExecutorService;
 
-class PreloadTask implements Runnable {
-    private final Folders folders;
-    private final boolean source;
+import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.Event.PreloadAction;
+
+class PreLoadTask extends Task<Folder, PreloadAction> {
+    private final ExecutorService executorService;
     
-    PreloadTask(Folders folders, boolean source) {
-        this.folders = folders;
-        this.source = source;
+    PreLoadTask(Context context, PreloadAction action, ExecutorService executorService) {
+        super(context, action, context.statistics().preloadedFolders());
+        this.executorService = executorService;
     }
 
-    public void run() {
-        try {
-            if (source) {
-                System.out.println("Preloading source");
-                folders.source = folders.source.preload();
-            } else {
-                System.out.println("Preloading destination");
-                folders.destination = folders.destination.preload();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    @Override
+    protected boolean skipOnDryRun() {
+        return false;
+    }
+
+    @Override
+    protected Folder execute() throws IOException {
+        return action.folder().preload();
+    }
+
+    @Override
+    protected ExecutorService executorService() {
+        return executorService;
     }
 }

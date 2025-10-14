@@ -80,7 +80,7 @@ public class Event {
 
         @Override
         public String toString() {
-            return "CompareFileAction{source=" + source +", destination=" + destination +'}';
+            return getClass().getSimpleName()+"{source=" + source +", destination=" + destination +'}';
         }
     }
 
@@ -95,7 +95,7 @@ public class Event {
         CopyFileAction(@Nonnull File source, @Nonnull Folder destination) {
             this.source = Objects.requireNonNull(source);
             this.destination = Objects.requireNonNull(destination);
-            this.progressListener = null;
+            this.progressListener = l -> {};
         }
         /**
          * Returns the source file.
@@ -127,6 +127,10 @@ public class Event {
         LongConsumer progressListener() {
             return progressListener;
         }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName()+"{source=" + source +", destination=" + destination +'}';
+        }
     }
 
     /**
@@ -155,6 +159,10 @@ public class Event {
         public String name() {
             return name;
         }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName()+"{parent=" + folder +", name=" + name +'}';
+        }
     }
 
     /**
@@ -173,29 +181,34 @@ public class Event {
         public Entry entry() {
             return entry;
         }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName()+"{entry=" + entry +'}';
+        }
     }
 
-    // public static final class ListAction extends Action {
-    //     private final Folder folder;
-    //     private final boolean recursive;
-    //     ListAction(@Nonnull Folder folder, boolean recursive) {
-    //         this.folder = Objects.requireNonNull(folder);
-    //         this.recursive = recursive;
-    //     }
-    //     /**
-    //      * Returns the folder to list.
-    //      * @return A Folder instance
-    //      */
-    //     @Nonnull
-    //     public Folder folder() {
-    //         return folder;
-    //     }
-    //     /**
-    //      * Returns true if the list is recursive.
-    //      * @return true if the list is recursive
-    //      */
-    //     public boolean recursive() {
-    //         return recursive;
-    //     }
-    // }
+    public static sealed class ListAction extends Action {
+        private final Folder folder;
+        ListAction(@Nonnull Folder folder) {
+            this.folder = Objects.requireNonNull(folder);
+        }
+        /**
+         * Returns the folder to list.
+         * @return A Folder instance
+         */
+        @Nonnull
+        public Folder folder() {
+            return folder;
+        }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName()+"{folder=" + folder +'}';
+        }
+    }
+
+    public static final class PreloadAction extends ListAction {
+        PreloadAction(@Nonnull Folder folder) {
+            super(folder);
+        }
+    }
 }

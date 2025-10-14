@@ -9,6 +9,8 @@ public class Statistics {
         }
     }
 
+    public Counter preloadedFolders = new Counter();
+    private Counter listedFolders = new Counter();
     private Counter checkedFiles = new Counter();
     private Counter deletedFiles = new Counter();
     private Counter copiedFiles = new Counter();
@@ -18,6 +20,8 @@ public class Statistics {
     private AtomicLong skippedFiles = new AtomicLong();
     private AtomicLong skippedFolders = new AtomicLong();
 
+    public Counter preloadedFolders() { return preloadedFolders; }
+    public Counter listedFolders() { return listedFolders; }
     public Counter checkedFiles() { return checkedFiles; }
     public Counter deletedFiles() { return deletedFiles; }
     public Counter deletedFolders() { return deletedFolders; }
@@ -28,7 +32,7 @@ public class Statistics {
     public AtomicLong skippedFolders() { return skippedFolders; }
     @Override
     public String toString() {
-        return "Statistics [checkedFiles=" + checkedFiles + ", deletedFiles=" + deletedFiles + ", copiedFiles="
+        return "Statistics [preloadedFolders=" + preloadedFolders + ", listedFolders=" + listedFolders + ", checkedFiles=" + checkedFiles + ", deletedFiles=" + deletedFiles + ", copiedFiles="
                 + copiedFiles + ", copiedBytes=" + copiedBytes + ", deletedFolders=" + deletedFolders
                 + ", createdFolders=" + createdFolders + ", skippedFiles=" + skippedFiles
                 + ", skippedFolders=" + skippedFolders + "]";

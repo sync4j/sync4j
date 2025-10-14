@@ -15,7 +15,6 @@ class DeleteTask extends Task<Void, DeleteEntryAction> {
 
     @Override
     public Void execute() throws IOException {
-        System.out.println("Deleting " + entry.getParentPath()+ "/" + entry.getName());
         entry.delete();
         return null;
     }

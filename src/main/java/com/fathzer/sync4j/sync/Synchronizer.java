@@ -1,15 +1,17 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
 import com.fathzer.sync4j.Folder;
-
+import com.fathzer.sync4j.sync.Event.PreloadAction;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 import jakarta.annotation.Nonnull;
@@ -24,17 +26,15 @@ public class Synchronizer implements AutoCloseable {
         this.context = new Context(parameters);
     }
 
-    public void start() throws IOException {
+    public void start() {
         try (ForkJoinPool walkService = new ForkJoinPool(4)) {
-            System.out.println("Syncing " + folders.source + " -> " + folders.destination);
             if (context.params().performance().fastList()) {
                 doPreload(folders, walkService);
             }
+            if (context.isCancelled()) return;
             walkTask = walkService.submit(new WalkTask(context, folders.source, folders.destination, null));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            throw new IOException(e.getCause());
         }
     }
 
@@ -57,16 +57,28 @@ public class Synchronizer implements AutoCloseable {
         }
     }
 
-    private void doPreload(Folders folders, ForkJoinPool walkService) throws ExecutionException, InterruptedException {
-        List<Future<?>> futures = new LinkedList<>();
+    private void doPreload(Folders folders, ExecutorService preloadService) throws InterruptedException {
+        Map<Boolean, CompletableFuture<Folder>> futures = new HashMap<>();
         if (folders.source.getFileProvider().isFastListSupported()) {
-            futures.add(walkService.submit(new PreloadTask(folders, true)));
+            futures.put(true, new PreLoadTask(context, new PreloadAction(folders.source), preloadService).executeAsync());
         }
         if (folders.destination.getFileProvider().isFastListSupported()) {
-            futures.add(walkService.submit(new PreloadTask(folders, false)));
+            futures.put(false, new PreLoadTask(context, new PreloadAction(folders.destination), preloadService).executeAsync());
         }
-        for (Future<?> future : futures) {
-            future.get();
+        for (Map.Entry<Boolean, CompletableFuture<Folder>> entry : futures.entrySet()) {
+            final boolean isSource = entry.getKey();
+            try {
+                Folder folder = entry.getValue().get();
+                if (folder != null) {
+                    if (isSource) {
+                        folders.source = folder;
+                    } else {
+                        folders.destination = folder;
+                    }
+                }
+            } catch (ExecutionException e) {
+                throw new IllegalStateException("PANIC, should not happen",e.getCause()); //TODO
+            }
         }
     }
 

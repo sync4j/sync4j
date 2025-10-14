@@ -36,7 +36,7 @@ public class SyncParameters {
         this.eventListener = event -> {};
         this.errorManager = (ex, a) -> {
             Logger logger = Logger.getLogger(SyncParameters.class.getName());
-            logger.log(Level.SEVERE, ex, () -> a.toString() + " fails with " + ex.getMessage());
+            logger.log(Level.SEVERE, ex, () -> a.toString() + " failed with " + ex.getMessage());
             return true;
         };
     }
