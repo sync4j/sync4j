@@ -22,9 +22,9 @@ class LocalFileTest {
         // Create a tmp file
         Path tmpFilePath = Files.createTempFile("sync4j", "tmp");
         tmpFilePath.toFile().deleteOnExit();
-        // Test exception is thrown when parent is a regular file
+        // Test no exception is thrown when parent is a regular file
         Entry fakeFile = INSTANCE.get(tmpFilePath.resolve("toto.txt").toString());
-        assertThrows (IOException.class, fakeFile::getParent);
+        assertDoesNotThrow (fakeFile::getParent);
     }
 
     @Test

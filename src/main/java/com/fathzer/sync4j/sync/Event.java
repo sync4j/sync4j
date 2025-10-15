@@ -1,34 +1,46 @@
 package com.fathzer.sync4j.sync;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.parameters.PerformanceParameters;
 
 import jakarta.annotation.Nonnull;
 
+/**
+ * An event sent by the synchronizer.
+ */
 public class Event {
+    /**
+     * The status of an action.
+     */
     public enum Status {
+        /**
+         * The action is planned.
+         */
         PLANNED,
+        /**
+         * The action is started.
+         */
         STARTED,
+        /**
+         * The action failed.
+         */
         FAILED,
+        /**
+         * The action completed.
+         */
         COMPLETED
     }
 
-    public static sealed class Action {
-        private static final AtomicLong COUNTER_LONG = new AtomicLong();
-        private final long id;
-        private Action() {
-            this.id = COUNTER_LONG.getAndIncrement();
-        }
-
-        public long id() {
-            return id;
-        }
+    /**
+     * An action performed by the synchronizer.
+     */
+    public static interface Action {
     }
 
     private final Action action;
@@ -39,22 +51,30 @@ public class Event {
         this.status = Status.PLANNED;
     }
 
+    /**
+     * Returns the action.
+     * @return the action
+     */
     public Action getAction() {
         return action;
     }
 
+    /**
+     * Returns the status.
+     * @return the status
+     */
     public Status getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    void setStatus(Status status) {
         this.status = status;
     }
 
     /**
      * Action to compare two files.
      */
-    public static final class CompareFileAction extends Action {
+    public static final class CompareFileAction implements Action {
         private final File source;
         private final File destination;
         CompareFileAction(@Nonnull File source, @Nonnull File destination) {
@@ -87,7 +107,7 @@ public class Event {
     /**
      * Action to copy a file to a destination folder.
      */
-    public static final class CopyFileAction extends Action {
+    public static final class CopyFileAction implements Action {
         private final File source;
         private final Folder destination;
         private LongConsumer progressListener;
@@ -136,7 +156,7 @@ public class Event {
     /**
      * Action to create a folder.
      */
-    public static final class CreateFolderAction extends Action {
+    public static final class CreateFolderAction implements Action {
         private final Folder folder;
         private final String name;
         CreateFolderAction(@Nonnull Folder folder, @Nonnull String name) {
@@ -168,7 +188,7 @@ public class Event {
     /**
      * Action to delete an entry.
      */
-    public static final class DeleteEntryAction extends Action {
+    public static final class DeleteEntryAction implements Action {
         private final Entry entry;
         DeleteEntryAction(@Nonnull Entry entry) {
             this.entry = Objects.requireNonNull(entry);
@@ -187,7 +207,10 @@ public class Event {
         }
     }
 
-    public static sealed class ListAction extends Action {
+    /**
+     * Action to list the content of a folder.
+     */
+    public static sealed class ListAction implements Action {
         private final Folder folder;
         ListAction(@Nonnull Folder folder) {
             this.folder = Objects.requireNonNull(folder);
@@ -206,6 +229,10 @@ public class Event {
         }
     }
 
+    /**
+     * Action to preload a folder (i.e. preload the list of entries of a folder and its subfolders).
+     * @see PerformanceParameters#fastList
+     */
     public static final class PreloadAction extends ListAction {
         PreloadAction(@Nonnull Folder folder) {
             super(folder);

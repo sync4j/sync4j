@@ -16,16 +16,31 @@ import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 import jakarta.annotation.Nonnull;
 
+/**
+ * A synchronizer that synchronizes two folders.
+ * <br>Please note that synchronization may produce unpredictable results if the source and destination folders are modified
+ * while the synchronizer is running.
+ */
 public class Synchronizer implements AutoCloseable {
     private final Folders folders;
     private Context context;
     private Future<?> walkTask;
 
+    /**
+     * Creates a new synchronizer.
+     * @param source the source folder
+     * @param destination the destination folder
+     * @param parameters the parameters
+     * @throws IOException if an I/O error occurs
+     */
     public Synchronizer(@Nonnull Folder source, @Nonnull Folder destination, @Nonnull SyncParameters parameters) throws IOException {
         this.folders = new Folders(Objects.requireNonNull(source), Objects.requireNonNull(destination));
         this.context = new Context(parameters);
     }
 
+    /**
+     * Starts the synchronizer.
+     */
     public void start() {
         try (ForkJoinPool walkService = new ForkJoinPool(4)) {
             if (context.params().performance().fastList()) {
@@ -38,18 +53,36 @@ public class Synchronizer implements AutoCloseable {
         }
     }
 
+    /**
+     * Gets the statistics of the synchronizer.
+     * <br>This method returns the statistics of the synchronizer at the time it was called.
+     * It can be polled to get the progress of the synchronizer.
+     * @return the statistics of the synchronizer
+     */
     public Statistics getStatistics() {
     	return context.statistics();
     }
     
+    /**
+     * Cancels the synchronizer.
+     */
     public void cancel() {
         context.cancel();
     }
 
+    /**
+     * Returns true if the synchronizer is cancelled.
+     * @return true if the synchronizer is cancelled
+     */
     public boolean isCancelled() {
         return context.isCancelled();
     }
 
+    /**
+     * Waits for the synchronizer to finish.
+     * @throws ExecutionException if the synchronizer throws an exception
+     * @throws InterruptedException if the current thread is interrupted
+     */
     public void waitFor() throws ExecutionException, InterruptedException {
         if (walkTask != null) {
             walkTask.get();
