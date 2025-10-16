@@ -1,7 +1,6 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
 
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.sync.Event.CompareFileAction;
@@ -18,7 +17,7 @@ class CompareFileTask extends Task<Boolean, CompareFileAction> {
 
     @Override
     protected Boolean execute() throws IOException {
-        return context().params().fileComparator().areSame(action.source(), action.destination());
+        return context.params().fileComparator().areSame(action.source(), action.destination());
     }
 
     @Override
@@ -27,7 +26,7 @@ class CompareFileTask extends Task<Boolean, CompareFileAction> {
     }
 
     @Override
-    protected ExecutorService executorService() {
-        return context().checkService;
+    protected Kind kind() {
+        return Kind.CHECKER;
     }
 }

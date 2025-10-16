@@ -1,14 +1,20 @@
 package com.fathzer.sync4j.sync;
 
+import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import com.fathzer.sync4j.Entry;
@@ -35,17 +41,47 @@ class Context implements AutoCloseable {
         }
     }
 
+    /**
+     * A counter of tasks.
+     * <br>It is used to count the number of tasks that need to be completed.
+     * <br>It is used to wait for all tasks to be completed.
+     */
+    private static class TaskCounter {
+        private final AtomicLong pendingTasks = new AtomicLong(0);
+        private final CountDownLatch completionLatch = new CountDownLatch(1);
+
+        void increment() {
+            pendingTasks.incrementAndGet();
+        }
+
+        void decrement() {
+            if (pendingTasks.decrementAndGet() == 0) {
+                completionLatch.countDown();
+            }
+        }
+
+        void await() throws InterruptedException {
+            completionLatch.await();
+        }
+    }
+
     private final SyncParameters syncParameters;
-    final ExecutorService checkService;
-    final ExecutorService copyService;
+    private final ForkJoinPool walkService;
+    private final ExecutorService checkService;
+    private final ExecutorService copyService;
     private final AtomicBoolean cancelled = new AtomicBoolean();
-    final Phaser phaser = new Phaser();
     private final Statistics statistics = new Statistics();
+    private final TaskCounter taskCounter = new TaskCounter();
 
     Context(SyncParameters parameters) {
         this.syncParameters = parameters;
-        this.checkService = Executors.newFixedThreadPool(parameters.performance().maxComparisonThreads(), new DaemonThreadFactory("check"));
-        this.copyService = Executors.newFixedThreadPool(parameters.performance().maxCopyThreads(), new DaemonThreadFactory("copy"));
+        this.walkService = new ForkJoinPool(parameters.performance().maxWalkThreads());
+        this.checkService = buildExecutorService(parameters.performance().maxComparisonThreads(), "check");
+        this.copyService = buildExecutorService(parameters.performance().maxCopyThreads(), "copy");
+    }
+
+    private ExecutorService buildExecutorService(int threadCount, String prefix) {
+        return threadCount > 0 ? Executors.newFixedThreadPool(threadCount, new DaemonThreadFactory(prefix)) : null;
     }
 
     SyncParameters params() {
@@ -91,28 +127,26 @@ class Context implements AutoCloseable {
      */
     void asyncCopy(File src, Folder destinationFolder) {
         CopyFileAction action = new CopyFileAction(src, destinationFolder);
-        tryExecute(() -> 
-            new CopyFileTask(this, action).executeAsync()
-        , () -> action);
+        tryExecute(() -> executeAsync(new CopyFileTask(this, action)), () -> action);
     }
 
     void asyncCheckAndCopy(File src, Folder destinationFolder, File destinationFile) {
-        CompletableFuture<Boolean> areSame = new CompareFileTask(this, src, destinationFile).executeAsync();
+        CompletableFuture<Boolean> areSame = executeAsync(new CompareFileTask(this, src, destinationFile));
         areSame.thenAcceptAsync(same -> {
             if (Boolean.FALSE.equals(same)) {
                 asyncCopy(src, destinationFolder);
             }
-        }, copyService);
+        }, copyService==null?walkService:copyService);
     }
 
     Folder createFolder(Folder destination, String name) {
         final CreateFolderTask task = new CreateFolderTask(this, destination, name);
-        final Result<Folder> result = tryExecute(task::executeSync, () -> task.action);
+        final Result<Folder> result = tryExecute(() -> executeSync(task), () -> task.action);
         return result.value();
     }
 
     void asyncDelete(Entry entry) {
-        new DeleteTask(this, entry).executeAsync();
+        executeAsync(new DeleteTask(this, entry));
     }
 
     void deleteThenAsyncCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) {
@@ -127,7 +161,7 @@ class Context implements AutoCloseable {
 
     private boolean delete(Entry toBeDeleted) {
         final DeleteTask deleteTask = new DeleteTask(this, toBeDeleted);
-        return !tryExecute(deleteTask::executeSync, () -> deleteTask.action).failed();
+        return !tryExecute(() -> executeSync(deleteTask), () -> deleteTask.action).failed();
     }
 
     void cancel() {
@@ -144,17 +178,102 @@ class Context implements AutoCloseable {
         return event;
     }
 
-    void update(Event event, Event.Status status) {
+    private void update(Event event, Event.Status status) {
         event.setStatus(status);
         syncParameters.eventListener().accept(event);
     }
 
-    void waitFor() {
-        phaser.awaitAdvance(phaser.getPhase());
+    //TODO Remove this method
+    private static final Map<Class<?>, String> THREAD_PREFIX = Map.of(
+        CopyFileTask.class, "copy",
+        CompareFileTask.class, "check"
+    );
+    private void checkThread() {
+        final String name = Thread.currentThread().getName();
+        final String expectedPrefix = THREAD_PREFIX.get(this.getClass());
+        if (expectedPrefix != null) {
+            if (!name.startsWith(expectedPrefix) && !name.startsWith("ForkJoinPool")) {
+                System.err.println("!!! Task " + this + " should be executed on " + expectedPrefix + " thread instead of " + name);
+            }
+//        } else {
+//System.out.println("Starting " + action + " on " + Thread.currentThread().getName());
+        }
+    }
+
+    <V> V executeSync(Task<V, ?> task) throws IOException {
+        checkThread();
+        if (isCancelled() || (params().dryRun() && task.skipOnDryRun())) return task.getDefaultValue();
+        update(task.event, Event.Status.STARTED);
+        try {
+            V result = task.execute();
+            update(task.event, Event.Status.COMPLETED);
+            task.counter.done().incrementAndGet();
+            return result;
+        } finally {
+            if (task.event.getStatus() != Event.Status.COMPLETED) {
+                update(task.event, Event.Status.FAILED);
+            }
+        }
+    }
+
+    protected <V> CompletableFuture<V> executeAsync(Task<V, ?> task) {
+        if (task.isOnlySynchronous()) {
+            throw new UnsupportedOperationException("Task " + this + " is only synchronous");
+        }
+        return CompletableFuture.supplyAsync(buildAsyncSupplier(task), executorService(task))
+            .exceptionally(e -> {
+                processError(e, task.action);
+                return null;
+            }
+        );
+    }
+
+    private ExecutorService executorService(Task<?,?> task) {
+        final ExecutorService executorService = switch (task.kind()) {
+            case WALKER -> walkService;
+            case CHECKER -> checkService;
+            case MODIFIER -> copyService;
+        };
+        return executorService==null ? walkService : executorService;
+    }
+
+    /**
+     * Build a supplier that can be used to execute the task asynchronously.
+     * <p>
+     * WARNING: The supplier will register the task in the phaser and will deregister it when the task is done.
+     * So you absolutely must call supplier.get() to execute the task one time (and only one time).
+     * </p>
+     * @return the supplier
+     */
+    private <V> Supplier<V> buildAsyncSupplier(Task<V, ?> task) {
+        final Supplier<V> supplier = () -> {
+            try {
+                return executeSync(task);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            } finally {
+                taskCounter.decrement();
+            }
+        };
+        taskCounter.increment();
+        return supplier;
+    }
+
+    <V> Future<V> submit(ForkJoinTask<V> action) {
+        return walkService.submit(action);
+    }
+
+    void waitFor() throws InterruptedException {
+        taskCounter.await();
     }
 
     public void close() {
-        this.checkService.shutdown();
-        this.copyService.shutdown();
+        walkService.shutdown();
+        if (this.checkService != null) {
+            this.checkService.shutdown();
+        }
+        if (this.copyService != null) {
+            this.copyService.shutdown();
+        }
     }
 }

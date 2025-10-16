@@ -2,7 +2,6 @@ package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.function.Supplier;
 
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Event.CreateFolderAction;
@@ -15,7 +14,6 @@ class CreateFolderTask extends Task<Folder, CreateFolderAction> {
 
     @Override
     public Folder execute() throws IOException {
-        System.out.println("Thread " + Thread.currentThread().getName() + ": Creating folder " + action.folder().getParentPath()+ "/" + action.folder().getName() + "/" + action.name());
         return action.folder().mkdir(action.name());
     }
 
@@ -25,8 +23,8 @@ class CreateFolderTask extends Task<Folder, CreateFolderAction> {
     }
 
     @Override
-    protected Supplier<Folder> buildAsyncSupplier() {
+    protected boolean isOnlySynchronous() {
         // Prevent the task to be executed asynchronously
-        throw new UnsupportedOperationException();
+        return true;
     }
 }

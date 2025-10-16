@@ -1,17 +1,13 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
 
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Event.PreloadAction;
 
 class PreLoadTask extends Task<Folder, PreloadAction> {
-    private final ExecutorService executorService;
-    
-    PreLoadTask(Context context, PreloadAction action, ExecutorService executorService) {
+    PreLoadTask(Context context, PreloadAction action) {
         super(context, action, context.statistics().preloadedFolders());
-        this.executorService = executorService;
     }
 
     @Override
@@ -25,7 +21,7 @@ class PreLoadTask extends Task<Folder, PreloadAction> {
     }
 
     @Override
-    protected ExecutorService executorService() {
-        return executorService;
+    protected Kind kind() {
+        return Kind.WALKER;
     }
 }

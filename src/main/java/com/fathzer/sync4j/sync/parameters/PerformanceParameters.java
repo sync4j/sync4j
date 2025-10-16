@@ -17,8 +17,8 @@ public class PerformanceParameters {
      */
     public PerformanceParameters() {
         this.maxWalkThreads = 1;
-        this.maxCopyThreads = 1;
-        this.maxComparisonThreads = 1;
+        this.maxCopyThreads = 0;
+        this.maxComparisonThreads = 0;
     }
     
     /**
@@ -58,6 +58,9 @@ public class PerformanceParameters {
      * @return this
      */
     public PerformanceParameters maxWalkThreads(int maxWalkThreads) {
+        if (maxWalkThreads < 1) {
+            throw new IllegalArgumentException("maxWalkThreads must be >= 1");
+        }
         this.maxWalkThreads = maxWalkThreads;
         return this;
     }
@@ -73,10 +76,14 @@ public class PerformanceParameters {
     
     /**
      * Sets the maximum number of threads used to copy files.
-     * @param maxCopyThreads the maximum number of threads used to copy files. Default is 1.
+     * @param maxCopyThreads the maximum number of threads used to copy files.
+     * Default is 0 (copies are made using the walk threads).
      * @return this
      */
     public PerformanceParameters maxCopyThreads(int maxCopyThreads) {
+        if (maxCopyThreads < 0) {
+            throw new IllegalArgumentException("maxCopyThreads must be >= 0");
+        }
         this.maxCopyThreads = maxCopyThreads;
         return this;
     }
@@ -92,10 +99,14 @@ public class PerformanceParameters {
     
     /**
      * Sets the maximum number of threads used to compare files.
-     * @param maxComparisonThreads the maximum number of threads used to compare files. Default is 1.
+     * @param maxComparisonThreads the maximum number of threads used to compare files.
+     * Default is 0 (comparisons are made using the walk threads).
      * @return this
      */
     public PerformanceParameters maxComparisonThreads(int maxComparisonThreads) {
+        if (maxComparisonThreads < 0) {
+            throw new IllegalArgumentException("maxComparisonThreads must be >= 0");
+        }
         this.maxComparisonThreads = maxComparisonThreads;
         return this;
     }

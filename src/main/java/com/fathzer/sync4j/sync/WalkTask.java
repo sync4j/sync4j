@@ -61,7 +61,7 @@ class WalkTask extends RecursiveAction {
     private List<Entry> list(Folder folder) {
         final ListTask task = new ListTask(context, new ListAction(folder));
         try {
-            return task.executeSync();
+            return context.executeSync(task);
         } catch (IOException e) {
             context.processError(e, task.action);
             return null;

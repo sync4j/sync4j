@@ -9,7 +9,7 @@ class CopyFileTask extends Task<Void, CopyFileAction> {
 
     CopyFileTask(Context context, CopyFileAction action) throws IOException {
         super(context, action, context.statistics().copiedFiles());
-        context().statistics().copiedBytes().total().addAndGet(action.source().getSize());
+        context.statistics().copiedBytes().total().addAndGet(action.source().getSize());
     }
 
     public Void execute() throws IOException {
@@ -18,7 +18,7 @@ class CopyFileTask extends Task<Void, CopyFileAction> {
     }
 
     private void progress(long bytes) {
-        context().statistics().copiedBytes().done().addAndGet(bytes-bytesCopied);
+        context.statistics().copiedBytes().done().addAndGet(bytes-bytesCopied);
         bytesCopied = bytes;
         action.progressListener().accept(bytes);
     }
