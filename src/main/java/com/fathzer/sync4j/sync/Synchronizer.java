@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Event.PreloadAction;
@@ -22,7 +21,6 @@ import jakarta.annotation.Nonnull;
 public class Synchronizer implements AutoCloseable {
     private final Folders folders;
     private Context context;
-    private Future<Void> walkTask;
 
     /**
      * Creates a new synchronizer.
@@ -40,14 +38,17 @@ public class Synchronizer implements AutoCloseable {
      * Starts the synchronizer.
      */
     public void start() {
+        context.taskCounter().increment();
         try {
             if (context.params().performance().fastList()) {
                 doPreload(folders);
             }
             if (context.isCancelled()) return;
-            walkTask = context.submit(new WalkTask(context, folders.source, folders.destination, null));
+            context.submit(new WalkTask(context, folders.source, folders.destination, null));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } finally {
+            context.taskCounter().decrement();
         }
     }
 
@@ -107,10 +108,7 @@ public class Synchronizer implements AutoCloseable {
      * @throws InterruptedException if the current thread is interrupted
      */
     public void waitFor() throws ExecutionException, InterruptedException {
-        if (walkTask != null) {
-            walkTask.get();
-            context.waitFor();
-        }
+        context.taskCounter().await();
     }
 
     @Override

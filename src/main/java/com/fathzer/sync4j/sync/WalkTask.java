@@ -23,6 +23,7 @@ class WalkTask extends RecursiveAction {
     private transient List<Entry> destinationList;
 
     WalkTask(Context context, Folder sourceFolder, Folder destinationFolder, List<Entry> destinationList) {
+        context.taskCounter().increment();
         this.context = context;
         this.sourceFolder = sourceFolder;
         this.destinationFolder = destinationFolder;
@@ -31,29 +32,33 @@ class WalkTask extends RecursiveAction {
 
     @Override
     protected void compute() {
-        List<Entry> sourceList = list(sourceFolder);
-        if (destinationList == null && sourceList != null) {
-            destinationList = list(destinationFolder);
-        }
-        if (sourceList == null || destinationList == null) {
-            // An error occurred during folder listing, do not process the folders
-            return;
-        }
-        Map<String, Entry> destinationMap = destinationList.stream().collect(Collectors.toMap(Entry::getName, Function.identity()));
-        Set<String> destinationNames = new HashSet<>(destinationMap.keySet());
-        for (Entry srcEntry : sourceList) {
-            if (context.isCancelled()) return;
-            if (!context.params().filter().test(srcEntry)) {
-                context.skip(srcEntry);
-                continue;
+        try {
+            List<Entry> sourceList = list(sourceFolder);
+            if (destinationList == null && sourceList != null) {
+                destinationList = list(destinationFolder);
             }
-            processEntry(destinationMap, destinationNames, srcEntry);
-        }
-        if (context.isCancelled()) return;
-        // Remaining destination entries have to be deleted
-        for (String name : destinationNames) {
-        Entry entry = destinationMap.get(name);
-        context.asyncDelete(entry);
+            if (sourceList == null || destinationList == null) {
+                // An error occurred during folder listing, do not process the folders
+                return;
+            }
+            Map<String, Entry> destinationMap = destinationList.stream().collect(Collectors.toMap(Entry::getName, Function.identity()));
+            Set<String> destinationNames = new HashSet<>(destinationMap.keySet());
+            for (Entry srcEntry : sourceList) {
+                if (context.isCancelled()) return;
+                if (!context.params().filter().test(srcEntry)) {
+                    context.skip(srcEntry);
+                    continue;
+                }
+                processEntry(destinationMap, destinationNames, srcEntry);
+            }
+            if (context.isCancelled()) return;
+            // Remaining destination entries have to be deleted
+            for (String name : destinationNames) {
+                Entry entry = destinationMap.get(name);
+                context.asyncDelete(entry);
+            }
+        } finally {
+            context.taskCounter().decrement();
         }
     }
 

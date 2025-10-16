@@ -9,8 +9,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
+import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +46,7 @@ class Context implements AutoCloseable {
      * <br>It is used to count the number of tasks that need to be completed.
      * <br>It is used to wait for all tasks to be completed.
      */
-    private static class TaskCounter {
+    static class TaskCounter {
         private final AtomicLong pendingTasks = new AtomicLong(0);
         private final CountDownLatch completionLatch = new CountDownLatch(1);
 
@@ -58,6 +58,10 @@ class Context implements AutoCloseable {
             if (pendingTasks.decrementAndGet() == 0) {
                 completionLatch.countDown();
             }
+        }
+
+        long getPendingTasks() {
+            return pendingTasks.get();
         }
 
         void await() throws InterruptedException {
@@ -259,12 +263,12 @@ class Context implements AutoCloseable {
         return supplier;
     }
 
-    <V> Future<V> submit(ForkJoinTask<V> action) {
+    Future<Void> submit(RecursiveAction action) {
         return walkService.submit(action);
     }
 
-    void waitFor() throws InterruptedException {
-        taskCounter.await();
+    TaskCounter taskCounter() {
+        return taskCounter;
     }
 
     public void close() {

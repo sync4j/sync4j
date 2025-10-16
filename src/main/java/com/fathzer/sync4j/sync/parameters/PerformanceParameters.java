@@ -17,8 +17,8 @@ public class PerformanceParameters {
      */
     public PerformanceParameters() {
         this.maxWalkThreads = 1;
-        this.maxCopyThreads = 0;
-        this.maxComparisonThreads = 0;
+        this.maxCopyThreads = 1;
+        this.maxComparisonThreads = 1;
     }
     
     /**
@@ -77,7 +77,7 @@ public class PerformanceParameters {
     /**
      * Sets the maximum number of threads used to copy files.
      * @param maxCopyThreads the maximum number of threads used to copy files.
-     * Default is 0 (copies are made using the walk threads).
+     * Default is 1 (copies are made using the walk threads).
      * @return this
      */
     public PerformanceParameters maxCopyThreads(int maxCopyThreads) {
@@ -100,7 +100,7 @@ public class PerformanceParameters {
     /**
      * Sets the maximum number of threads used to compare files.
      * @param maxComparisonThreads the maximum number of threads used to compare files.
-     * Default is 0 (comparisons are made using the walk threads).
+     * Default is 1 (comparisons are made using the walk threads).
      * @return this
      */
     public PerformanceParameters maxComparisonThreads(int maxComparisonThreads) {
