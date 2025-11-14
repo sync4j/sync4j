@@ -1,6 +1,8 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -76,6 +78,7 @@ class Context implements AutoCloseable {
     private final AtomicBoolean cancelled = new AtomicBoolean();
     private final Statistics statistics = new Statistics();
     private final TaskCounter taskCounter = new TaskCounter();
+    private final List<Throwable> exceptions = new LinkedList<>();
 
     Context(SyncParameters parameters) {
         this.syncParameters = parameters;
@@ -94,6 +97,10 @@ class Context implements AutoCloseable {
 
     Statistics statistics() {
         return statistics;
+    }
+
+    List<Throwable> errors() {
+        return exceptions;
     }
 
     void skip(Entry entry) {
@@ -117,6 +124,7 @@ class Context implements AutoCloseable {
         if (e instanceof CompletionException) {
             e = e.getCause();
         }
+        exceptions.add(e);
         if (syncParameters.errorManager().test(e, action)) {
             cancel();
         }

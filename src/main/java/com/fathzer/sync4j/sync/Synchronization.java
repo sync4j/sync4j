@@ -2,6 +2,7 @@ package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -14,11 +15,11 @@ import com.fathzer.sync4j.sync.parameters.SyncParameters;
 import jakarta.annotation.Nonnull;
 
 /**
- * A synchronizer that synchronizes two folders.
- * <br>Please note that synchronization may produce unpredictable results if the source and destination folders are modified
+ * A synchronization between a source and a destination folder.
+ * <br>Please note that synchronization may produce unpredictable results if the source or destination folders are modified
  * while the synchronizer is running.
  */
-public class Synchronizer implements AutoCloseable {
+public class Synchronization implements AutoCloseable {
     private final Folders folders;
     private Context context;
 
@@ -29,13 +30,13 @@ public class Synchronizer implements AutoCloseable {
      * @param parameters the parameters
      * @throws IOException if an I/O error occurs
      */
-    public Synchronizer(@Nonnull Folder source, @Nonnull Folder destination, @Nonnull SyncParameters parameters) throws IOException {
+    public Synchronization(@Nonnull Folder source, @Nonnull Folder destination, @Nonnull SyncParameters parameters) throws IOException {
         this.folders = new Folders(Objects.requireNonNull(source), Objects.requireNonNull(destination));
         this.context = new Context(parameters);
     }
 
     /**
-     * Starts the synchronizer.
+     * Starts the synchronization.
      */
     public void start() {
         context.taskCounter().increment();
@@ -78,37 +79,40 @@ public class Synchronizer implements AutoCloseable {
     }
 
     /**
-     * Gets the statistics of the synchronizer.
-     * <br>This method returns the statistics of the synchronizer at the time it was called.
-     * It can be polled to get the progress of the synchronizer.
-     * @return the statistics of the synchronizer
+     * Gets the statistics of the synchronization.
+     * <br>This method returns the statistics of the synchronization at the time it was called.
+     * It can be polled to get the progress of the synchronization.
+     * @return the statistics of the synchronization
      */
     public Statistics getStatistics() {
     	return context.statistics();
     }
     
     /**
-     * Cancels the synchronizer.
+     * Cancels the synchronization.
      */
     public void cancel() {
         context.cancel();
     }
 
     /**
-     * Returns true if the synchronizer is cancelled.
-     * @return true if the synchronizer is cancelled
+     * Returns true if the synchronization is cancelled.
+     * @return true if the synchronization is cancelled
      */
     public boolean isCancelled() {
         return context.isCancelled();
     }
 
     /**
-     * Waits for the synchronizer to finish.
-     * @throws ExecutionException if the synchronizer throws an exception
+     * Waits for the synchronization to finish.
      * @throws InterruptedException if the current thread is interrupted
      */
-    public void waitFor() throws ExecutionException, InterruptedException {
+    public void waitFor() throws InterruptedException {
         context.taskCounter().await();
+    }
+
+    public List<Throwable> getErrors() {
+        return context.errors();
     }
 
     @Override
