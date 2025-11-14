@@ -11,7 +11,7 @@ import jakarta.annotation.Nonnull;
 public interface FileProvider extends AutoCloseable {
     /**
      * Returns the list of hash algorithms supported by this provider.
-     * @return the list of hash algorithms supported by this provider
+     * @return the list of hash algorithms supported by this provider ordered from best to worst.
      */
     @Nonnull
     default List<HashAlgorithm> getSupportedHash() {

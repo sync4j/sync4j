@@ -3,6 +3,7 @@ package com.fathzer.sync4j.sync.parameters;
 import java.io.IOException;
 
 import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.HashAlgorithm;
 
 import jakarta.annotation.Nonnull;
@@ -38,6 +39,16 @@ public interface FileComparator {
      */
     public static FileComparator hash(HashAlgorithm hashAlgorithm) {
         return (f1, f2) -> f1.getHash(hashAlgorithm).equals(f2.getHash(hashAlgorithm));
+    }
+
+    /**
+     * Returns the best hash algorithm supported by two providers.
+     * @param provider the first provider
+     * @param other the second provider
+     * @return the best hash algorithm supported by both providers. It supposes that FileProvider.getSupportedHash() returns a list sorted from best to worst.
+     */
+    public static HashAlgorithm hash(FileProvider provider, FileProvider other) {
+        return provider.getSupportedHash().stream().filter(algo -> other.getSupportedHash().contains(algo)).findFirst().orElse(null);
     }
 
     /**

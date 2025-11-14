@@ -47,6 +47,3 @@ If you need to use a provider other than local, you should add the corresponding
 ```
 
 ## TODO
-
-- [ ] Make single threaded mode by default (no copy and no comparison threads).
-- [ ] Add a method in Synchronizer to get the error list.
