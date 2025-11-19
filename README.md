@@ -3,7 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.fathzer/sync4j)](https://search.maven.org/artifact/com.fathzer/sync4j)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Javadocs](https://www.javadoc.io/badge/com.fathzer/sync4j.svg)](https://www.javadoc.io/doc/com.fathzer/sync4j)
-[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=fathzer_sync4j&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=fathzer_sync4j)
+[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=sync4j_sync4j&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=sync4j_sync4j)
 
 sync4j is a Java library for synchronizing files and folders.
 
@@ -43,7 +43,8 @@ If you need to use a provider other than local, you should add the corresponding
 ## Usage
 
 Here are some basic examples.  
-Please have a look at the [javadoc](https://www.javadoc.io/doc/com.fathzer/sync4j) for more details about configuration and available functionnalities.
+Please have a look at the [javadoc](https://www.javadoc.io/doc/com.fathzer/sync4j) for more details about configuration and available functionnalities.  
+Please note that these examples requires the [pCloud provider](https://github.com/fathzer/sync4j-pcloud).
 
 Copy a file from pCloud to a local folder:
 ```java
