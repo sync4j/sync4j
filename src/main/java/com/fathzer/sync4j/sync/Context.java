@@ -3,7 +3,6 @@ package com.fathzer.sync4j.sync;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -195,25 +194,7 @@ class Context implements AutoCloseable {
         syncParameters.eventListener().accept(event);
     }
 
-    //TODO Remove this method
-    private static final Map<Class<?>, String> THREAD_PREFIX = Map.of(
-        CopyFileTask.class, "copy",
-        CompareFileTask.class, "check"
-    );
-    private void checkThread() {
-        final String name = Thread.currentThread().getName();
-        final String expectedPrefix = THREAD_PREFIX.get(this.getClass());
-        if (expectedPrefix != null) {
-            if (!name.startsWith(expectedPrefix) && !name.startsWith("ForkJoinPool")) {
-                System.err.println("!!! Task " + this + " should be executed on " + expectedPrefix + " thread instead of " + name);
-            }
-//        } else {
-//System.out.println("Starting " + action + " on " + Thread.currentThread().getName());
-        }
-    }
-
     <V> V executeSync(Task<V, ?> task) throws IOException {
-        checkThread();
         if (isCancelled() || (params().dryRun() && task.skipOnDryRun())) return task.getDefaultValue();
         update(task.event, Event.Status.STARTED);
         try {

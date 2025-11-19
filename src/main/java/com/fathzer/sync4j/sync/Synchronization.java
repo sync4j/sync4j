@@ -73,7 +73,7 @@ public class Synchronization implements AutoCloseable {
                     }
                 }
             } catch (ExecutionException e) {
-                throw new IllegalStateException("PANIC, should not happen",e.getCause()); //TODO
+                throw new IllegalStateException("PANIC, should not happen",e.getCause());
             }
         }
     }
