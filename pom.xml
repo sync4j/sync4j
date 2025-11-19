@@ -10,6 +10,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sonar.organization>sync4j</sonar.organization>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
   </properties>
@@ -43,6 +44,5 @@
       <version>5.13.4</version>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 </project>
