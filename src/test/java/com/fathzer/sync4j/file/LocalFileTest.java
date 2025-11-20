@@ -8,34 +8,79 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.fathzer.sync4j.Entry;
 
 class LocalFileTest {
+    @TempDir
+    private static Path tempDir;
+
+    private static Entry folder;
+    private static Entry file;
+    private static Entry nonExisting;
+
+    @BeforeAll
+    static void setup() throws IOException {
+        String path = tempDir.toString();
+        folder = INSTANCE.get(Files.createDirectory(tempDir.resolve("folder")).toString());
+        file = INSTANCE.get(Files.createFile(tempDir.resolve("file.txt")).toString());
+        nonExisting = INSTANCE.get(path + "/nonExisting");
+    }
+
     @Test
     void testGetParent() throws IOException {
-        final Path path = Paths.get("toto.txt");
-        Entry file = INSTANCE.get(path.toString());
-        assertEquals(countParent(path), countParent(file));
+        assertEquals(countParent(tempDir.resolve("file.txt")), countParent(file));
 
-        // Create a tmp file
-        Path tmpFilePath = Files.createTempFile("sync4j", "tmp");
-        tmpFilePath.toFile().deleteOnExit();
         // Test no exception is thrown when parent is a regular file
-        Entry fakeFile = INSTANCE.get(tmpFilePath.resolve("toto.txt").toString());
-        assertDoesNotThrow (fakeFile::getParent);
+        assertDoesNotThrow (nonExisting::getParent);
     }
 
     @Test
     void testGetParentPath() throws IOException {
-        final Path path = Paths.get("toto.txt");
-        Entry file = INSTANCE.get(path.toString());
-        String expected = path.toAbsolutePath().getParent().toString();
+        String expected = tempDir.resolve("file.txt").toAbsolutePath().getParent().toString();
         assertEquals(expected, file.getParentPath());
 
         Entry root = getRoot();
         assertEquals(null, root.getParentPath());
+    }
+
+    @Test
+    void testGetProvider() throws IOException {
+        Entry root = getRoot();
+        assertSame(INSTANCE, root.getFileProvider());
+        assertSame(INSTANCE, folder.getFileProvider());
+        assertSame(INSTANCE, file.getFileProvider());
+        assertSame(INSTANCE, nonExisting.getFileProvider());
+    }
+
+    @Test
+    void testIsFileAndSimilar() throws IOException {
+        Entry root = getRoot();
+        assertTrue(root.exists());
+        assertTrue(root.isFolder());
+        assertFalse(root.isFile());
+        assertSame(root, root.asFolder());
+
+        assertTrue(file.exists());
+        assertTrue(file.isFile());
+        assertFalse(file.isFolder());
+        assertSame(file, file.asFile());
+        assertThrows(IllegalStateException.class, () -> file.asFolder());
+
+        assertTrue(folder.exists());
+        assertTrue(folder.isFolder());
+        assertFalse(folder.isFile());
+        assertSame(folder, folder.asFolder());
+        assertThrows(IllegalStateException.class, () -> folder.asFile());
+
+        assertFalse(nonExisting.exists());
+        assertFalse(nonExisting.isFolder());
+        assertFalse(nonExisting.isFile());
+        assertThrows(IllegalStateException.class, () -> nonExisting.asFolder());
+        assertThrows(IllegalStateException.class, () -> nonExisting.asFile());
     }
 
     private int countParent(Entry entry) throws IOException {
