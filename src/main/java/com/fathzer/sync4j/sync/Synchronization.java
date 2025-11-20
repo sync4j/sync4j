@@ -111,6 +111,10 @@ public class Synchronization implements AutoCloseable {
         context.taskCounter().await();
     }
 
+    /**
+     * Gets the list of errors that occurred during the synchronization.
+     * @return the list of errors (empty if no error occurred)
+     */
     public List<Throwable> getErrors() {
         return context.errors();
     }
