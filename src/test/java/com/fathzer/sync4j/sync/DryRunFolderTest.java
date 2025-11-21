@@ -37,7 +37,7 @@ class DryRunFolderTest {
         DryRunFolder rootFolder = new DryRunFolder(Paths.get(""));
         assertNull(rootFolder.getParentPath());
         assertThrows(UnsupportedOperationException.class, folder::getParent);
-        assertThrows(UnsupportedOperationException.class, () -> folder.delete());
+        assertThrows(UnsupportedOperationException.class, folder::delete);
     }
     
     @Test

@@ -3,6 +3,7 @@ package com.fathzer.sync4j.sync;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -25,18 +26,20 @@ import com.fathzer.sync4j.sync.Event.Action;
 import com.fathzer.sync4j.sync.Event.CopyFileAction;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
+import jakarta.annotation.Nonnull;
+
 class Context implements AutoCloseable {
-    private static class DaemonThreadFactory implements ThreadFactory {
+    static class DaemonThreadFactory implements ThreadFactory {
         private static final AtomicInteger THREAD_NUMBER = new AtomicInteger(1);
         private final String namePrefix;
         
-        DaemonThreadFactory(String namePrefix) {
-            this.namePrefix = namePrefix;
+        DaemonThreadFactory(@Nonnull String namePrefix) {
+            this.namePrefix = Objects.requireNonNull(namePrefix);
         }
         
         @Override
-        public Thread newThread(Runnable r) {
-            Thread thread = new Thread(r, namePrefix + "-" + THREAD_NUMBER.getAndIncrement());
+        public Thread newThread(@Nonnull Runnable r) {
+            Thread thread = new Thread(Objects.requireNonNull(r), namePrefix + "-" + THREAD_NUMBER.getAndIncrement());
             thread.setDaemon(true);
             return thread;
         }
