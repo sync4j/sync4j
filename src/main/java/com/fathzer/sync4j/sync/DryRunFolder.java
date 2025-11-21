@@ -3,12 +3,15 @@ package com.fathzer.sync4j.sync;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.LongConsumer;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
+
+import jakarta.annotation.Nonnull;
 
 /**
  * A folder that does nothing, used for dry run to mock an empty folder.
@@ -18,8 +21,8 @@ import com.fathzer.sync4j.Folder;
 class DryRunFolder implements Folder {
     private final Path path;
 
-    DryRunFolder(Path path) {
-        this.path = path;
+    DryRunFolder(@Nonnull Path path) {
+        this.path = Objects.requireNonNull(path);
     }
 
     @Override
@@ -64,11 +67,15 @@ class DryRunFolder implements Folder {
 
     @Override
     public File copy(String fileName, File content, LongConsumer progressListener) throws IOException {
+        Objects.requireNonNull(fileName);
+        Objects.requireNonNull(content);
+        Objects.requireNonNull(progressListener);
         throw new UnsupportedOperationException();
     }
 
     @Override
     public Folder mkdir(String folderName) throws IOException {
+        Objects.requireNonNull(folderName);
         throw new UnsupportedOperationException();
     }
 

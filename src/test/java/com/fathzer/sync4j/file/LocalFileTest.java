@@ -256,8 +256,8 @@ class LocalFileTest {
     }
 
     private File createFile(String content) throws IOException{
-        File file = Mockito.mock(File.class);
-        when(file.getInputStream()).thenReturn(new ByteArrayInputStream(content.getBytes()));
-        return file;
+        File result = Mockito.mock(File.class);
+        when(result.getInputStream()).thenReturn(new ByteArrayInputStream(content.getBytes()));
+        return result;
     }
 }

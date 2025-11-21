@@ -1,6 +1,5 @@
 package com.fathzer.sync4j.sync.parameters;
 
-//TODO Single threaded mode
 /**
  * Parameters to control the performance of the synchronizer.
  */
