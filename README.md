@@ -78,11 +78,11 @@ Please note that by default, the synchronization will use 1 thread to walk folde
 
 ## Implement your own provider
 
-A provider is an implementation of the [Provider](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/file/Provider.java) interface. It allows you to access files on a remote storage (ssh, s3, etc...).
+A provider is an implementation of the [FileProvider](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/FileProvider.java) interface. It allows you to access files on a remote storage (ssh, s3, etc...).
 
 To implement your own provider, you should:
-- Implement the [Provider](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/file/Provider.java) interface.
-- Implement the [Folder](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/file/Folder.java) interface.
-- Implement the [File](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/file/File.java) interface.
+- Implement the [FileProvider](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/FileProvider.java) interface.
+- Implement the [Folder](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/Folder.java) interface.
+- Implement the [File](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/File.java) interface.
 
 An example of a provider is the [pCloudProvider](https://github.com/fathzer/sync4j-pcloud).
