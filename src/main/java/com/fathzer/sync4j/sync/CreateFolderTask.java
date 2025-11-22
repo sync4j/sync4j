@@ -18,12 +18,12 @@ class CreateFolderTask extends Task<Folder, CreateFolderAction> {
     }
 
     @Override
-    protected Folder getDefaultValue() throws IOException {
+    protected Folder defaultValue() throws IOException {
         return new DryRunFolder(Paths.get(action.folder().getParentPath(), action.folder().getName(), action.name()));
     }
 
     @Override
-    protected boolean isOnlySynchronous() {
+    protected boolean onlySynchronous() {
         // Prevent the task to be executed asynchronously
         return true;
     }

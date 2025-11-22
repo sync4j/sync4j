@@ -11,7 +11,7 @@ class CompareFileTask extends Task<Boolean, CompareFileAction> {
     }
 
     @Override
-    protected Boolean getDefaultValue() {
+    protected Boolean defaultValue() {
         return true;
     }
 

@@ -4,10 +4,12 @@ import java.io.IOException;
 
 import com.fathzer.sync4j.sync.Event.CopyFileAction;
 
+import jakarta.annotation.Nonnull;
+
 class CopyFileTask extends Task<Void, CopyFileAction> {
     private long bytesCopied;
 
-    CopyFileTask(Context context, CopyFileAction action) throws IOException {
+    CopyFileTask(@Nonnull Context context, @Nonnull CopyFileAction action) throws IOException {
         super(context, action, context.statistics().copiedFiles());
         context.statistics().copiedBytes().total().addAndGet(action.source().getSize());
     }

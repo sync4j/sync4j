@@ -198,7 +198,7 @@ class Context implements AutoCloseable {
     }
 
     <V> V executeSync(Task<V, ?> task) throws IOException {
-        if (isCancelled() || (params().dryRun() && task.skipOnDryRun())) return task.getDefaultValue();
+        if (isCancelled() || (params().dryRun() && task.skipOnDryRun())) return task.defaultValue();
         update(task.event, Event.Status.STARTED);
         try {
             V result = task.execute();
@@ -213,7 +213,7 @@ class Context implements AutoCloseable {
     }
 
     protected <V> CompletableFuture<V> executeAsync(Task<V, ?> task) {
-        if (task.isOnlySynchronous()) {
+        if (task.onlySynchronous()) {
             throw new UnsupportedOperationException("Task " + this + " is only synchronous");
         }
         return CompletableFuture.supplyAsync(buildAsyncSupplier(task), executorService(task))
