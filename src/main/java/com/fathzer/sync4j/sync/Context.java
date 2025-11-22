@@ -198,7 +198,7 @@ class Context implements AutoCloseable {
     }
 
     <V> V executeSync(Task<V, ?> task) throws IOException {
-        if (isCancelled() || (params().dryRun() && task.skipOnDryRun())) return task.defaultValue();
+        if (isCancelled() || (params().dryRun() && (Task.Kind.MODIFIER == task.kind()))) return task.defaultValue();
         update(task.event, Event.Status.STARTED);
         try {
             V result = task.execute();

@@ -11,11 +11,6 @@ class PreLoadTask extends Task<Folder, PreloadAction> {
     }
 
     @Override
-    protected boolean skipOnDryRun() {
-        return false;
-    }
-
-    @Override
     protected Folder execute() throws IOException {
         return action.folder().preload();
     }

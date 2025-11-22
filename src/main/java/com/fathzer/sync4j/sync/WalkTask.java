@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
-import com.fathzer.sync4j.sync.Event.ListAction;
 
 class WalkTask extends RecursiveAction {
 	private static final long serialVersionUID = 1L;
@@ -64,7 +63,7 @@ class WalkTask extends RecursiveAction {
 
     @SuppressWarnings("java:S1168")
     private List<Entry> list(Folder folder) {
-        final ListTask task = new ListTask(context, new ListAction(folder));
+        final ListTask task = new ListTask(context, folder);
         try {
             return context.executeSync(task);
         } catch (IOException e) {

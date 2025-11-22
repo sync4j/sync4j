@@ -58,7 +58,6 @@ class TaskTest {
         assertEquals(1, counter.total().get());
 
         assertNull(task.defaultValue());
-        assertTrue(task.skipOnDryRun());
         assertEquals(Task.Kind.MODIFIER, task.kind());
         assertFalse(task.onlySynchronous());
     }

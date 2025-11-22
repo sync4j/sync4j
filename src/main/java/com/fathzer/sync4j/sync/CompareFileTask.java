@@ -21,11 +21,6 @@ class CompareFileTask extends Task<Boolean, CompareFileAction> {
     }
 
     @Override
-    protected boolean skipOnDryRun() {
-        return false;
-    }
-
-    @Override
     protected Kind kind() {
         return Kind.CHECKER;
     }
