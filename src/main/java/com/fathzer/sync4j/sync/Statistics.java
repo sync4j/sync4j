@@ -35,6 +35,27 @@ public class Statistics {
         Counter() {
             this(Objects.requireNonNull(new AtomicLong()), Objects.requireNonNull(new AtomicLong()));
         }
+        public Counter(long total, long done) {
+            this(new AtomicLong(total), new AtomicLong(done));
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Long.hashCode(total.get());
+            result = prime * result + Long.hashCode(done.get());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null) return false;
+            if (getClass() != obj.getClass()) return false;
+            Counter other = (Counter) obj;
+            return total.get() == other.total.get() && done.get() == other.done.get();
+        }
     }
 
     private Counter preloadedFolders = new Counter();
@@ -105,4 +126,38 @@ public class Statistics {
                 + ", createdFolders=" + createdFolders + ", skippedFiles=" + skippedFiles
                 + ", skippedFolders=" + skippedFolders + "]";
     }
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + preloadedFolders.hashCode();
+        result = prime * result + listedFolders.hashCode();
+        result = prime * result + checkedFiles.hashCode();
+        result = prime * result + deletedFiles.hashCode();
+        result = prime * result + copiedFiles.hashCode();
+        result = prime * result + copiedBytes.hashCode();
+        result = prime * result + deletedFolders.hashCode();
+        result = prime * result + createdFolders.hashCode();
+        result = prime * result + Long.hashCode(skippedFiles.get());
+        result = prime * result + Long.hashCode(skippedFolders.get());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        Statistics other = (Statistics) obj;
+        if (!preloadedFolders.equals(other.preloadedFolders)) return false;
+        if (!listedFolders.equals(other.listedFolders)) return false;
+        if (!checkedFiles.equals(other.checkedFiles)) return false;
+        if (!deletedFiles.equals(other.deletedFiles)) return false;
+        if (!copiedFiles.equals(other.copiedFiles)) return false;
+        if (!copiedBytes.equals(other.copiedBytes)) return false;
+        if (!deletedFolders.equals(other.deletedFolders)) return false;
+        if (!createdFolders.equals(other.createdFolders)) return false;
+        return skippedFiles.get() == other.skippedFiles.get() && skippedFolders.get() == other.skippedFolders.get();
+    }
+   
 }

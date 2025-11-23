@@ -77,6 +77,12 @@ class StatisticsTest {
         
         assertEquals(10, counter.total().get());
         assertEquals(5, counter.done().get());
+
+        Statistics.Counter count32 = new Statistics.Counter(3, 2);
+        Statistics.Counter count42 = new Statistics.Counter(4, 2);
+        assertNotEquals(count32, count42);
+        assertEquals(count32, new Statistics.Counter(3, 2));
+        assertEquals(count42.hashCode(), new Statistics.Counter(4, 2).hashCode());
     }
 
     @Test
@@ -97,5 +103,14 @@ class StatisticsTest {
         assertNotNull(counter.done());
         assertEquals(0, counter.total().get());
         assertEquals(0, counter.done().get());
+    }
+
+    @Test
+    void testEqualsAndHashCode() {
+        Statistics stats1 = new Statistics();
+        Statistics stats2 = new Statistics();
+        
+        assertEquals(stats1, stats2);
+        assertEquals(stats1.hashCode(), stats2.hashCode());
     }
 }

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.Task.Kind;
 
 class PreloadTaskTest {
     private Context context;
@@ -41,6 +42,7 @@ class PreloadTaskTest {
         assertSame(context, task.context);
         assertSame(folder, task.action.folder());
         assertFalse(task.onlySynchronous());
+        assertEquals(Kind.WALKER, task.kind());
         
         // Verify statistics were updated
         assertEquals(1, statistics.preloadedFolders().total().get());

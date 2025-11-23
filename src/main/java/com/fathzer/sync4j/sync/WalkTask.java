@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.RecursiveAction;
 import java.util.function.Function;
@@ -13,6 +14,8 @@ import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
 
+import jakarta.annotation.Nonnull;
+
 class WalkTask extends RecursiveAction {
 	private static final long serialVersionUID = 1L;
 	
@@ -21,11 +24,11 @@ class WalkTask extends RecursiveAction {
     private final transient Folder destinationFolder;
     private transient List<Entry> destinationList;
 
-    WalkTask(Context context, Folder sourceFolder, Folder destinationFolder, List<Entry> destinationList) {
-        context.taskCounter().increment();
+    WalkTask(@Nonnull Context context, @Nonnull Folder sourceFolder, @Nonnull Folder destinationFolder, List<Entry> destinationList) {
         this.context = context;
-        this.sourceFolder = sourceFolder;
-        this.destinationFolder = destinationFolder;
+        context.taskCounter().increment();
+        this.sourceFolder = Objects.requireNonNull(sourceFolder);
+        this.destinationFolder = Objects.requireNonNull(destinationFolder);
         this.destinationList = destinationList;
     }
 
@@ -62,7 +65,7 @@ class WalkTask extends RecursiveAction {
     }
 
     @SuppressWarnings("java:S1168")
-    private List<Entry> list(Folder folder) {
+    protected List<Entry> list(Folder folder) {
         final ListTask task = new ListTask(context, folder);
         try {
             return context.executeSync(task);

@@ -224,7 +224,7 @@ class Context implements AutoCloseable {
         );
     }
 
-    private ExecutorService executorService(Task<?,?> task) {
+    ExecutorService executorService(Task<?,?> task) {
         final ExecutorService executorService = switch (task.kind()) {
             case WALKER -> walkService;
             case CHECKER -> checkService;
