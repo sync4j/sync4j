@@ -6,8 +6,8 @@ import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Event.PreloadAction;
 
 class PreLoadTask extends Task<Folder, PreloadAction> {
-    PreLoadTask(Context context, PreloadAction action) {
-        super(context, action, context.statistics().preloadedFolders());
+    PreLoadTask(Context context, Folder action) {
+        super(context, new PreloadAction(action), context.statistics().preloadedFolders());
     }
 
     @Override

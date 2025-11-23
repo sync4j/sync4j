@@ -1,15 +1,13 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.fathzer.sync4j.Folder;
-import com.fathzer.sync4j.sync.Event.PreloadAction;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 import jakarta.annotation.Nonnull;
@@ -20,8 +18,9 @@ import jakarta.annotation.Nonnull;
  * while the synchronizer is running.
  */
 public class Synchronization implements AutoCloseable {
-    private final Folders folders;
-    private Context context;
+    private Folder source;
+    private Folder destination;
+    private final Context context;
 
     /**
      * Creates a new synchronizer.
@@ -31,7 +30,8 @@ public class Synchronization implements AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     public Synchronization(@Nonnull Folder source, @Nonnull Folder destination, @Nonnull SyncParameters parameters) throws IOException {
-        this.folders = new Folders(Objects.requireNonNull(source), Objects.requireNonNull(destination));
+        this.source = Objects.requireNonNull(source);
+        this.destination = Objects.requireNonNull(destination);
         this.context = new Context(parameters);
     }
 
@@ -42,10 +42,10 @@ public class Synchronization implements AutoCloseable {
         context.taskCounter().increment();
         try {
             if (context.params().performance().fastList()) {
-                doPreload(folders);
+                doPreload();
             }
             if (context.isCancelled()) return;
-            context.submit(new WalkTask(context, folders.source, folders.destination, null));
+            context.submit(new WalkTask(context, source, destination, null));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
@@ -53,28 +53,22 @@ public class Synchronization implements AutoCloseable {
         }
     }
 
-    private void doPreload(Folders folders) throws InterruptedException {
-        Map<Boolean, CompletableFuture<Folder>> futures = new HashMap<>();
-        if (folders.source.getFileProvider().isFastListSupported()) {
-            futures.put(true, context.executeAsync(new PreLoadTask(context, new PreloadAction(folders.source))));
+    private void doPreload() throws InterruptedException {
+        List<CompletableFuture<Void>> futures = new LinkedList<>();
+        if (source.getFileProvider().isFastListSupported()) {
+            futures.add(
+                context.executeAsync(new PreLoadTask(context, source)).thenAccept(folder -> source = folder)
+            );
         }
-        if (folders.destination.getFileProvider().isFastListSupported()) {
-            futures.put(false, context.executeAsync(new PreLoadTask(context, new PreloadAction(folders.destination))));
+        if (destination.getFileProvider().isFastListSupported()) {
+            futures.add(
+                context.executeAsync(new PreLoadTask(context, destination)).thenAccept(folder -> destination = folder)
+            );
         }
-        for (Map.Entry<Boolean, CompletableFuture<Folder>> entry : futures.entrySet()) {
-            final boolean isSource = entry.getKey();
-            try {
-                Folder folder = entry.getValue().get();
-                if (folder != null) {
-                    if (isSource) {
-                        folders.source = folder;
-                    } else {
-                        folders.destination = folder;
-                    }
-                }
-            } catch (ExecutionException e) {
-                throw new IllegalStateException("PANIC, should not happen",e.getCause());
-            }
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+        } catch (ExecutionException e) {
+            throw new IllegalStateException("PANIC, should not happen",e.getCause());
         }
     }
 

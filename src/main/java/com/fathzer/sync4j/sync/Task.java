@@ -37,11 +37,6 @@ abstract class Task<V, A extends Action> {
     protected V defaultValue() throws IOException {
         return null;
     }
-/*
-    protected final boolean skipOnDryRun() {
-        return Kind.MODIFIER == kind();
-    }
-*/
 
     protected Kind kind() {
         return Kind.MODIFIER;
