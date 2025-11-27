@@ -32,11 +32,11 @@ class Context implements AutoCloseable {
     static class DaemonThreadFactory implements ThreadFactory {
         private static final AtomicInteger THREAD_NUMBER = new AtomicInteger(1);
         private final String namePrefix;
-        
+
         DaemonThreadFactory(@Nonnull String namePrefix) {
             this.namePrefix = Objects.requireNonNull(namePrefix);
         }
-        
+
         @Override
         public Thread newThread(@Nonnull Runnable r) {
             Thread thread = new Thread(Objects.requireNonNull(r), namePrefix + "-" + THREAD_NUMBER.getAndIncrement());
@@ -113,7 +113,7 @@ class Context implements AutoCloseable {
         }
     }
 
-    private <V, C extends Callable<V>> Result<V> tryExecute(C callable, Supplier<Action> actionSupplier) {
+    <V, C extends Callable<V>> Result<V> tryExecute(C callable, Supplier<Action> actionSupplier) {
         try {
             return new Result<>(callable.call(), false);
         } catch (Exception e) {
@@ -132,7 +132,7 @@ class Context implements AutoCloseable {
         }
     }
 
-    private record Result<V>(V value, boolean failed) {}
+    record Result<V>(V value, boolean failed) {}
 
     /**
      * Asynchronously copies a file to a destination folder.
@@ -150,7 +150,7 @@ class Context implements AutoCloseable {
             if (Boolean.FALSE.equals(same)) {
                 asyncCopy(src, destinationFolder);
             }
-        }, copyService==null?walkService:copyService);
+        }, copyService == null ? walkService : copyService);
     }
 
     Folder createFolder(Folder destination, String name) {
@@ -230,7 +230,7 @@ class Context implements AutoCloseable {
             case CHECKER -> checkService;
             case MODIFIER -> copyService;
         };
-        return executorService==null ? walkService : executorService;
+        return executorService == null ? walkService : executorService;
     }
 
     /**

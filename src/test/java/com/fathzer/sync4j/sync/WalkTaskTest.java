@@ -22,7 +22,7 @@ class WalkTaskTest {
     static interface IOFunction<V> {
         V apply(Task<V, ?> task) throws IOException;
     }
-    
+
     private Context context;
     private Folder sourceFolder;
     private Folder destinationFolder;
@@ -32,7 +32,7 @@ class WalkTaskTest {
 
     private IOFunction<?> syncFunction;
     private BiConsumer<Throwable, Action> errorFunction;
-    
+
     @BeforeEach
     void setUp() {
         parameters = new SyncParameters();
@@ -52,23 +52,23 @@ class WalkTaskTest {
         // Create mocks
         sourceFolder = mock(Folder.class);
         destinationFolder = mock(Folder.class);
-        
+
         // Initialize empty lists
         sourceList = new ArrayList<>();
         destinationList = new ArrayList<>();
     }
-    
+
     @Test
     void testConstructor() {
         // When
         WalkTask task = new WalkTask(context, sourceFolder, destinationFolder, destinationList);
-        
+
         // Then - Use reflection to access private fields
         assertSame(context, getFieldValue(task, "context", Context.class));
         assertSame(sourceFolder, getFieldValue(task, "sourceFolder", Folder.class));
         assertSame(destinationFolder, getFieldValue(task, "destinationFolder", Folder.class));
         assertSame(destinationList, getFieldValue(task, "destinationList", List.class));
-        
+
         // Test null checks
         assertThrows(NullPointerException.class, () -> new WalkTask(null, sourceFolder, destinationFolder, destinationList));
         assertThrows(NullPointerException.class, () -> new WalkTask(context, null, destinationFolder, destinationList));
@@ -83,7 +83,7 @@ class WalkTaskTest {
         // When
         syncFunction = t -> sourceList;
         List<Entry> result = walkTask.list(sourceFolder);
-        
+
         // Then
         assertEquals(sourceList, result);
 
@@ -95,7 +95,7 @@ class WalkTaskTest {
             assertSame(Event.ListAction.class, action.getClass());
         };
         result = walkTask.list(sourceFolder);
-        
+
         // Then
         assertNull(result);
     }
