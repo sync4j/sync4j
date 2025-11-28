@@ -12,7 +12,7 @@ class PreLoadTask extends Task<Folder, PreloadAction> {
 
     @Override
     protected Folder execute() throws IOException {
-        return action.folder().preload();
+        return action().folder().preload();
     }
 
     @Override

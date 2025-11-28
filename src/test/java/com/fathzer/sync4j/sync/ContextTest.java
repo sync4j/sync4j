@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.sync.Context.Result;
 import com.fathzer.sync4j.sync.Event.Action;
-import com.fathzer.sync4j.sync.Statistics.Counter;
+import com.fathzer.sync4j.sync.Task.Kind;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class ContextTest {
@@ -167,24 +166,80 @@ class ContextTest {
     void testExecuteSync() throws IOException {
         // When
         SyncParameters parameters = new SyncParameters();
-        Action action = new Action(){};
-        List<Event.Status> statuses = new LinkedList<>();
-        parameters.eventListener(event -> {
-            assertEquals(action, event.getAction());
-            statuses.add(event.getStatus());
-        });
-        Counter counter = new Counter();
         try (Context context = new Context(parameters)) {
-            Task<String, ? extends Action> task = new Task<>(context, action, counter) {
-                @Override
-                public String execute() throws IOException {
-                    return "test";
-                }
-            };
+            @SuppressWarnings("unchecked")
+            Task<String, ? extends Action> task = mock(Task.class);
+            when(task.kind()).thenReturn(Kind.MODIFIER);
+            when(task.defaultValue()).thenReturn("default");
+
+            // When task should be executed
+            when(task.call()).thenReturn("test");
             String result = context.executeSync(task);
+            // Then
             assertEquals("test", result);
-            assertEquals(statuses.size(), 3);
-            assertEquals(List.of(Event.Status.PLANNED, Event.Status.STARTED, Event.Status.COMPLETED), statuses);
+
+            // When dry run and task is modifier
+            parameters.dryRun(true);
+            // Then default value is returned
+            result = context.executeSync(task);
+            assertEquals("default", result);
+
+            // When dry run task is checker
+            when(task.kind()).thenReturn(Kind.CHECKER);
+            // Then call is executed
+            result = context.executeSync(task);
+            assertEquals("test", result);
+
+            // When dry run and task is walker
+            when(task.kind()).thenReturn(Kind.WALKER);
+            // Then call is executed
+            result = context.executeSync(task);
+            assertEquals("test", result);
+
+            // When context is cancelled
+            context.cancel();
+            // Then call is not executed
+            result = context.executeSync(task);
+            assertEquals("default", result);
+        }
+    }
+
+    @Test
+    void testExecutorService() {
+        // When multiple executor services are used
+        SyncParameters parameters = new SyncParameters();
+        try (Context context = new Context(parameters)) {
+            @SuppressWarnings("unchecked")
+            Task<String, ? extends Action> task = mock(Task.class);
+
+            when(task.kind()).thenReturn(Kind.WALKER);
+            // Then
+            assertEquals(getFieldValue(context, "walkService", ExecutorService.class), context.executorService(task));
+
+            when(task.kind()).thenReturn(Kind.CHECKER);
+            assertEquals(getFieldValue(context, "checkService", ExecutorService.class), context.executorService(task));
+
+            when(task.kind()).thenReturn(Kind.MODIFIER);
+            assertEquals(getFieldValue(context, "copyService", ExecutorService.class), context.executorService(task));
+        }
+
+        // When only one executor service is used
+        parameters = new SyncParameters();
+        parameters.performance().maxCopyThreads(0).maxComparisonThreads(0);
+        try (Context context = new Context(parameters)) {
+            @SuppressWarnings("unchecked")
+            Task<String, ? extends Action> task = mock(Task.class);
+            ExecutorService service = getFieldValue(context, "walkService", ExecutorService.class);
+
+            when(task.kind()).thenReturn(Kind.WALKER);
+            // Then
+            assertEquals(service, context.executorService(task));
+
+            when(task.kind()).thenReturn(Kind.CHECKER);
+            assertEquals(service, context.executorService(task));
+
+            when(task.kind()).thenReturn(Kind.MODIFIER);
+            assertEquals(service, context.executorService(task));
         }
     }
 }

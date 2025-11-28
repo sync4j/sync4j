@@ -15,13 +15,13 @@ class CopyFileTask extends Task<Void, CopyFileAction> {
     }
 
     public Void execute() throws IOException {
-        action.destination().copy(action.source().getName(), action.source(), this::progress);
+        action().destination().copy(action().source().getName(), action().source(), this::progress);
         return null;
     }
 
     private void progress(long bytes) {
-        context.statistics().copiedBytes().done().addAndGet(bytes-bytesCopied);
+        context().statistics().copiedBytes().done().addAndGet(bytes-bytesCopied);
         bytesCopied = bytes;
-        action.progressListener().accept(bytes);
+        action().progressListener().accept(bytes);
     }
 }

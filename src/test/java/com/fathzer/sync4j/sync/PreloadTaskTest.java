@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Task.Kind;
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class PreloadTaskTest {
     private Context context;
@@ -25,12 +26,8 @@ class PreloadTaskTest {
         
         // Setup default behavior
         when(context.statistics()).thenReturn(statistics);
-        
-        // Setup context to create events
-        when(context.createEvent(any())).thenAnswer(invocation -> {
-            Event.Action a = invocation.getArgument(0);
-            return new Event(a);
-        });
+        SyncParameters parameters = new SyncParameters();
+        when(context.params()).thenReturn(parameters);
     }
     
     @Test
@@ -39,8 +36,8 @@ class PreloadTaskTest {
         PreLoadTask task = new PreLoadTask(context, folder);
         
         // Then
-        assertSame(context, task.context);
-        assertSame(folder, task.action.folder());
+        assertSame(context, task.context());
+        assertSame(folder, task.action().folder());
         assertFalse(task.onlySynchronous());
         assertEquals(Kind.WALKER, task.kind());
         

@@ -1,6 +1,8 @@
 package com.fathzer.sync4j.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class CopyFileTaskTest {
     
@@ -34,6 +37,8 @@ class CopyFileTaskTest {
         
         // Setup default behavior
         when(context.statistics()).thenReturn(statistics);
+        SyncParameters parameters = new SyncParameters();
+        when(context.params()).thenReturn(parameters);
         
         // Setup source file behavior
         when(sourceFile.getName()).thenReturn("test.txt");
@@ -41,12 +46,6 @@ class CopyFileTaskTest {
         
         // Setup action
         action = new Event.CopyFileAction(sourceFile, destinationFolder);
-        
-        // Setup context to create events
-        when(context.createEvent(any())).thenAnswer(invocation -> {
-            Event.Action a = invocation.getArgument(0);
-            return new Event(a);
-        });
     }
 
     private File fakeCopy(File file, LongConsumer consumer) throws IOException {
@@ -63,8 +62,8 @@ class CopyFileTaskTest {
         CopyFileTask task = new CopyFileTask(context, action);
         
         // Then
-        assertSame(context, task.context);
-        assertSame(action, task.action);
+        assertSame(context, task.context());
+        assertSame(action, task.action());
         
         // Verify statistics were updated
         assertEquals(1, statistics.copiedFiles().total().get());

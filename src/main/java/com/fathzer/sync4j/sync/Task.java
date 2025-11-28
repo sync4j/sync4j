@@ -1,5 +1,7 @@
 package com.fathzer.sync4j.sync;
 
+import static com.fathzer.sync4j.sync.Event.Status.*;
+
 import java.io.IOException;
 import java.util.Objects;
 
@@ -16,20 +18,34 @@ abstract class Task<V, A extends Action> {
     }
 
     @Nonnull
-    protected final Context context;
+    private final Context context;
     @Nonnull
-    protected final A action;
+    private final A action;
     @Nonnull
-    protected final Event event;
+    private final Event event;
     @Nonnull
-    protected final Counter counter;
+    private final Counter counter;
     
     protected Task(@Nonnull Context context, @Nonnull A action, @Nonnull Counter counter) {
         this.context = Objects.requireNonNull(context, "Context cannot be null");
         this.action = Objects.requireNonNull(action, "Action cannot be null");
-        this.event = Objects.requireNonNull(context.createEvent(action), "Event cannot be null");
+        this.event = new Event(action);
+        broadcast(PLANNED);
         this.counter = Objects.requireNonNull(counter, "Counter cannot be null");
         counter.total().incrementAndGet();
+    }
+
+    protected Context context() {
+        return context;
+    }
+
+    protected A action() {
+        return action;
+    }
+
+    private void broadcast(@Nonnull Event.Status status) {
+        event.setStatus(Objects.requireNonNull(status, "Status cannot be null"));
+        context.params().eventListener().accept(event);
     }
 
     protected abstract V execute() throws IOException;
@@ -44,5 +60,19 @@ abstract class Task<V, A extends Action> {
 
     protected boolean onlySynchronous() {
         return false;
+    }
+
+    final V call() throws IOException {
+        try {
+            broadcast(STARTED);
+            V result = execute();
+            counter.done().incrementAndGet();
+            broadcast(COMPLETED);
+            return result;
+        } finally {
+            if (event.getStatus() != COMPLETED) {
+                broadcast(FAILED);
+            }
+        }
     }
 }

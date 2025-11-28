@@ -14,7 +14,7 @@ class ListTask extends Task<List<Entry>, ListAction> {
 
     @Override
     protected List<Entry> execute() throws IOException {
-        return action.folder().list();
+        return action().folder().list();
     }
 
     @Override

@@ -17,7 +17,7 @@ class CompareFileTask extends Task<Boolean, CompareFileAction> {
 
     @Override
     protected Boolean execute() throws IOException {
-        return context.params().fileComparator().areSame(action.source(), action.destination());
+        return context().params().fileComparator().areSame(action().source(), action().destination());
     }
 
     @Override

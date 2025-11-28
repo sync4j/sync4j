@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Task.Kind;
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class ListTaskTest {
     private Context context;
@@ -28,12 +29,8 @@ class ListTaskTest {
         
         // Setup default behavior
         when(context.statistics()).thenReturn(statistics);
-        
-        // Setup context to create events
-        when(context.createEvent(any())).thenAnswer(invocation -> {
-            Event.Action a = invocation.getArgument(0);
-            return new Event(a);
-        });
+        SyncParameters parameters = new SyncParameters();
+        when(context.params()).thenReturn(parameters);
     }
     
     @Test
@@ -42,8 +39,8 @@ class ListTaskTest {
         ListTask task = new ListTask(context, target);
 
         // Verify attributes
-        assertSame(context, task.context);
-        assertSame(target, task.action.folder());
+        assertSame(context, task.context());
+        assertSame(target, task.action().folder());
         assertFalse(task.onlySynchronous());
         assertEquals(Kind.WALKER, task.kind());
 

@@ -70,7 +70,7 @@ class WalkTask extends RecursiveAction {
         try {
             return context.executeSync(task);
         } catch (IOException e) {
-            context.processError(e, task.action);
+            context.processError(e, task.action());
             return null;
         }
     }

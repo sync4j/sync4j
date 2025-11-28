@@ -14,12 +14,12 @@ class CreateFolderTask extends Task<Folder, CreateFolderAction> {
 
     @Override
     public Folder execute() throws IOException {
-        return action.folder().mkdir(action.name());
+        return action().folder().mkdir(action().name());
     }
 
     @Override
     protected Folder defaultValue() throws IOException {
-        return new DryRunFolder(Paths.get(action.folder().getParentPath(), action.folder().getName(), action.name()));
+        return new DryRunFolder(Paths.get(action().folder().getParentPath(), action().folder().getName(), action().name()));
     }
 
     @Override

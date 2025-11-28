@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class CreateFolderTaskTest {
     private Context context;
@@ -21,15 +22,11 @@ class CreateFolderTaskTest {
         context = mock(Context.class);
         statistics = new Statistics();
         destinationFolder = mock(Folder.class);
+        SyncParameters parameters = new SyncParameters();
         
         // Setup default behavior
         when(context.statistics()).thenReturn(statistics);
-        
-        // Setup context to create events
-        when(context.createEvent(any())).thenAnswer(invocation -> {
-            Event.Action a = invocation.getArgument(0);
-            return new Event(a);
-        });
+        when(context.params()).thenReturn(parameters);
 
         // Setup destination folder behavior
         when(destinationFolder.getParentPath()).thenReturn("/test");
@@ -42,9 +39,9 @@ class CreateFolderTaskTest {
         CreateFolderTask task = new CreateFolderTask(context, destinationFolder, "test");
         
         // Then
-        assertSame(context, task.context);
-        assertSame(destinationFolder, task.action.folder());
-        assertEquals("test", task.action.name());
+        assertSame(context, task.context());
+        assertSame(destinationFolder, task.action().folder());
+        assertEquals("test", task.action().name());
         assertTrue(task.onlySynchronous());
         
         // Verify statistics were updated

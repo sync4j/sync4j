@@ -25,18 +25,11 @@ class CompareFileTaskTest {
         statistics = new Statistics();
         source = mock(File.class);
         destination = mock(File.class);
-        
+        SyncParameters parameters = new SyncParameters();
+
         // Setup default behavior
         when(context.statistics()).thenReturn(statistics);
-        
-        // Setup context to create events
-        when(context.createEvent(any())).thenAnswer(invocation -> {
-            Event.Action a = invocation.getArgument(0);
-            return new Event(a);
-        });
-
-        SyncParameters params = new SyncParameters();
-        when(context.params()).thenReturn(params);
+        when(context.params()).thenReturn(parameters);
     }
     
     @Test
@@ -45,9 +38,9 @@ class CompareFileTaskTest {
         CompareFileTask task = new CompareFileTask(context, source, destination);
         
         // Then
-        assertSame(context, task.context);
-        assertSame(source, task.action.source());
-        assertSame(destination, task.action.destination());
+        assertSame(context, task.context());
+        assertSame(source, task.action().source());
+        assertSame(destination, task.action().destination());
         assertFalse(task.onlySynchronous());
         assertEquals(Kind.CHECKER, task.kind());
         

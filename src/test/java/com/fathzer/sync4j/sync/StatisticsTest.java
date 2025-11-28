@@ -81,6 +81,7 @@ class StatisticsTest {
         Statistics.Counter count32 = new Statistics.Counter(3, 2);
         Statistics.Counter count42 = new Statistics.Counter(4, 2);
         assertNotEquals(count32, count42);
+        assertNotEquals(count32, new Statistics.Counter(3, 4));
         assertEquals(count32, new Statistics.Counter(3, 2));
         assertEquals(count42.hashCode(), new Statistics.Counter(4, 2).hashCode());
     }

@@ -155,7 +155,7 @@ class Context implements AutoCloseable {
 
     Folder createFolder(Folder destination, String name) {
         final CreateFolderTask task = new CreateFolderTask(this, destination, name);
-        final Result<Folder> result = tryExecute(() -> executeSync(task), () -> task.action);
+        final Result<Folder> result = tryExecute(() -> executeSync(task), task::action);
         return result.value();
     }
 
@@ -175,7 +175,7 @@ class Context implements AutoCloseable {
 
     private boolean delete(Entry toBeDeleted) {
         final DeleteTask deleteTask = new DeleteTask(this, toBeDeleted);
-        return !tryExecute(() -> executeSync(deleteTask), () -> deleteTask.action).failed();
+        return !tryExecute(() -> executeSync(deleteTask), () -> deleteTask.action()).failed();
     }
 
     void cancel() {
@@ -186,30 +186,9 @@ class Context implements AutoCloseable {
         return cancelled.get();
     }
 
-    Event createEvent(Event.Action action) {
-        final Event event = new Event(action);
-        syncParameters.eventListener().accept(event);
-        return event;
-    }
-
-    private void update(Event event, Event.Status status) {
-        event.setStatus(status);
-        syncParameters.eventListener().accept(event);
-    }
-
     <V> V executeSync(Task<V, ?> task) throws IOException {
         if (isCancelled() || (params().dryRun() && (Task.Kind.MODIFIER == task.kind()))) return task.defaultValue();
-        update(task.event, Event.Status.STARTED);
-        try {
-            V result = task.execute();
-            update(task.event, Event.Status.COMPLETED);
-            task.counter.done().incrementAndGet();
-            return result;
-        } finally {
-            if (task.event.getStatus() != Event.Status.COMPLETED) {
-                update(task.event, Event.Status.FAILED);
-            }
-        }
+        return task.call();
     }
 
     protected <V> CompletableFuture<V> executeAsync(Task<V, ?> task) {
@@ -218,7 +197,7 @@ class Context implements AutoCloseable {
         }
         return CompletableFuture.supplyAsync(buildAsyncSupplier(task), executorService(task))
             .exceptionally(e -> {
-                processError(e, task.action);
+                processError(e, task.action());
                 return null;
             }
         );

@@ -12,6 +12,7 @@ import org.mockito.Mockito;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.sync.Task.Kind;
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class DeleteFileTaskTest {
     private Context context;
@@ -27,12 +28,8 @@ class DeleteFileTaskTest {
         
         // Setup default behavior
         when(context.statistics()).thenReturn(statistics);
-        
-        // Setup context to create events
-        when(context.createEvent(any())).thenAnswer(invocation -> {
-            Event.Action a = invocation.getArgument(0);
-            return new Event(a);
-        });
+        SyncParameters parameters = new SyncParameters();
+        when(context.params()).thenReturn(parameters);
     }
     
     @Test
@@ -45,8 +42,8 @@ class DeleteFileTaskTest {
         DeleteTask task = new DeleteTask(context, target);
 
         // Verify attributes
-        assertSame(context, task.context);
-        assertSame(target, task.action.entry());
+        assertSame(context, task.context());
+        assertSame(target, task.action().entry());
         assertFalse(task.onlySynchronous());
         assertEquals(Kind.MODIFIER, task.kind());
 
