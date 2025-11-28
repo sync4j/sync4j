@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -240,6 +241,58 @@ class ContextTest {
 
             when(task.kind()).thenReturn(Kind.MODIFIER);
             assertEquals(service, context.executorService(task));
+        }
+    }
+
+    @Test
+    void testExecuteAsync() throws Exception {
+        // Given
+        SyncParameters parameters = new SyncParameters();
+        Action action = new Action(){};
+        AtomicReference<IOException> expectedException = new AtomicReference<>(null);
+        try (Context context = new Context(parameters)) {
+            @SuppressWarnings("unchecked")
+            Task<String, Action> task = mock(Task.class);
+            when(task.kind()).thenReturn(Kind.MODIFIER);
+            when(task.action()).thenReturn(action);
+            // Verify counter is incremented before task execution
+            doAnswer(invocation -> {
+                assertEquals(1, context.taskCounter().getPendingTasks(), 
+                    "Task counter should be 1 during task execution");
+                if (expectedException.get() != null) {
+                    throw expectedException.get();
+                }
+                return "test";
+            }).when(task).call();
+
+            when(task.onlySynchronous()).thenReturn(true);
+            assertThrows(UnsupportedOperationException.class, () -> context.executeAsync(task));
+
+            when(task.onlySynchronous()).thenReturn(false);
+            // When - execute async
+            CompletableFuture<String> future = context.executeAsync(task);
+            
+            // When - wait for completion
+            String result = future.get();
+
+            // Then - task was executed with correct result and counter is decremented
+            assertEquals("test", result);
+            assertEquals(0, context.taskCounter().getPendingTasks(), "Task counter should be back to initial after completion");
+            verify(task).call();
+
+            // When - test exception handling
+            expectedException.set(new IOException("test error"));
+            parameters.errorManager((ex, a) -> {
+                assertEquals(expectedException.get(), ex);
+                assertEquals(action, a);
+                return false;
+            });
+            future = context.executeAsync(task);
+            result = future.get(); // Should not throw
+            
+            // Then - exception was handled and default value returned
+            assertNull(result);
+            assertEquals(List.of(expectedException.get()), context.errors());
         }
     }
 }

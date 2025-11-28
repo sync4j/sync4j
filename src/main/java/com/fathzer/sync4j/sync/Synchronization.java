@@ -1,11 +1,11 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
@@ -30,9 +30,13 @@ public class Synchronization implements AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     public Synchronization(@Nonnull Folder source, @Nonnull Folder destination, @Nonnull SyncParameters parameters) throws IOException {
+        this(new Context(parameters), source, destination);
+    }
+
+    Synchronization(@Nonnull Context context, @Nonnull Folder source, @Nonnull Folder destination) {
         this.source = Objects.requireNonNull(source);
         this.destination = Objects.requireNonNull(destination);
-        this.context = new Context(parameters);
+        this.context = Objects.requireNonNull(context);
     }
 
     /**
@@ -53,23 +57,24 @@ public class Synchronization implements AutoCloseable {
         }
     }
 
-    private void doPreload() throws InterruptedException {
-        List<CompletableFuture<Void>> futures = new LinkedList<>();
-        if (source.getFileProvider().isFastListSupported()) {
-            futures.add(
-                context.executeAsync(new PreLoadTask(context, source)).thenAccept(folder -> source = folder)
-            );
-        }
-        if (destination.getFileProvider().isFastListSupported()) {
-            futures.add(
-                context.executeAsync(new PreLoadTask(context, destination)).thenAccept(folder -> destination = folder)
-            );
-        }
+    void doPreload() throws InterruptedException {
+        List<CompletableFuture<Void>> futures = List.of(
+            doPreloadAsync(source, folder -> this.source = folder), 
+            doPreloadAsync(destination, folder -> this.destination = folder)
+        );
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
         } catch (ExecutionException e) {
             throw new IllegalStateException("PANIC, should not happen",e.getCause());
         }
+    }
+
+    private CompletableFuture<Void> doPreloadAsync(Folder folder, Consumer<Folder> consumer) {
+        if (folder.getFileProvider().isFastListSupported()) {
+            PreLoadTask task = new PreLoadTask(context, folder);
+            return context.executeAsync(task).thenAccept(consumer);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     /**

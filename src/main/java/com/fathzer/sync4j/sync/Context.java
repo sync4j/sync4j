@@ -175,7 +175,7 @@ class Context implements AutoCloseable {
 
     private boolean delete(Entry toBeDeleted) {
         final DeleteTask deleteTask = new DeleteTask(this, toBeDeleted);
-        return !tryExecute(() -> executeSync(deleteTask), () -> deleteTask.action()).failed();
+        return !tryExecute(() -> executeSync(deleteTask), deleteTask::action).failed();
     }
 
     void cancel() {
