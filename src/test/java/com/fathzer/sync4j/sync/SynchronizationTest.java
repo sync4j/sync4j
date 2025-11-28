@@ -3,9 +3,13 @@ package com.fathzer.sync4j.sync;
 import static com.fathzer.sync4j.util.PrivateFields.getFieldValue;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.awaitility.Awaitility.await;
+
+import java.time.Duration;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +52,7 @@ class SynchronizationTest {
             // Then
             assertNotNull(stats, "Statistics should not be null");
             assertFalse(synchronization.isCancelled(), "Initial state should not be cancelled");
+            assertTrue(synchronization.getErrors().isEmpty(), "Initial state should have no errors");
 
             // When
             synchronization.cancel();
@@ -99,6 +104,73 @@ class SynchronizationTest {
             // Verify the source folder was updated (preloaded)
             assertNotSame(source, getFieldValue(synchronization, "source", Folder.class));
             assertSame(dest, getFieldValue(synchronization, "destination", Folder.class)); // Should not be updated as it doesn't support fast list
+        }
+    }
+
+    @Test
+    void testStart() {
+        // Given
+        
+        // Create mock folders
+        Folder source = mock(Folder.class);
+        Folder dest = mock(Folder.class);
+
+        parameters.performance().fastList(true);
+        Context.TaskCounter counter = new Context.TaskCounter();
+        Context context = mock(Context.class);
+        when(context.params()).thenReturn(parameters);
+        when(context.taskCounter()).thenReturn(counter);
+
+        AtomicBoolean preloadCalled = new AtomicBoolean(false);
+        try (Synchronization synchronization= new Synchronization(context, source, dest) {
+            @Override
+            void doPreload() {
+                assertEquals(1, context.taskCounter().getPendingTasks());
+                preloadCalled.set(true);
+            }
+        }) {
+            // When
+            parameters.performance().fastList(false);
+            when(context.isCancelled()).thenReturn(true);
+
+            synchronization.start();
+
+            // Then
+            assertFalse(preloadCalled.get(), "Should not call preload when fastList is false");
+            verify(context, never()).submit(any(WalkTask.class));
+            assertEquals(0, context.taskCounter().getPendingTasks());
+
+            // When
+            parameters.performance().fastList(true);
+            preloadCalled.set(false);
+
+            synchronization.start();
+
+            // Then
+            assertTrue(preloadCalled.get(), "Should call preload when fastList is true");
+            verify(context, never()).submit(any(WalkTask.class));
+            assertEquals(0, context.taskCounter().getPendingTasks());
+
+            // When
+            parameters.performance().fastList(true);
+            when(context.isCancelled()).thenReturn(false);
+            when(context.submit(any(WalkTask.class))).thenAnswer(invocation -> {
+                // Warning, the task should decrement the counter (if not it is a task's bug)
+                context.taskCounter().decrement();
+                return CompletableFuture.completedFuture(null);
+            });
+            preloadCalled.set(false);
+
+            synchronization.start();
+            await().atMost(Duration.ofMillis(150)).until(() -> {
+                synchronization.waitFor();
+                return true;
+            });
+
+            // Then
+            assertTrue(preloadCalled.get(), "Should call preload when fastList is true");
+            verify(context).submit(any(WalkTask.class));
+            assertEquals(0, context.taskCounter().getPendingTasks());
         }
     }
 }
