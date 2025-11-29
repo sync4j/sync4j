@@ -26,23 +26,30 @@ import com.fathzer.sync4j.util.ProgressInputStream;
  */
 class LocalFile implements File, Folder {
     private final Path path;
+    private final LocalProvider provider;
 
     /**
      * Constructor.
      * @param path the path of the file
      */
-    LocalFile(Path path) {
+    LocalFile(Path path, LocalProvider provider) {
         this.path = path.toAbsolutePath();
+        this.provider = provider;
     }
 
     @Override
     public FileProvider getFileProvider() {
-        return LocalProvider.INSTANCE;
+        return provider;
     }
     
     @Override
     public boolean isFile() {
         return Files.isRegularFile(path);
+    }
+
+    @Override
+    public boolean exists() {
+        return Files.exists(path);
     }
 
     @Override
@@ -53,7 +60,7 @@ class LocalFile implements File, Folder {
     @Override
     public Entry getParent() {
         final Path parent = path.getParent();
-        return parent == null ? null : new LocalFile(parent);
+        return parent == null ? null : new LocalFile(parent, provider);
     }
     
     @Override
@@ -92,12 +99,13 @@ class LocalFile implements File, Folder {
     @Override
     public List<Entry> list() throws IOException {
         try (Stream<Path> stream = Files.list(path)) {
-            return stream.map(p -> (Entry) new LocalFile(p)).toList();
+            return stream.map(p -> (Entry) new LocalFile(p, provider)).toList();
         }
     }
 
     @Override
     public void delete() throws IOException {
+        checkReadOnly();
         if (isFolder()) {
             deletedFolder(path);
         } else if (exists()) {
@@ -105,7 +113,7 @@ class LocalFile implements File, Folder {
         }
     }
 
-    public void deletedFolder(Path pathToBeDeleted) throws IOException {
+    private void deletedFolder(Path pathToBeDeleted) throws IOException {
         Files.walkFileTree(pathToBeDeleted, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
@@ -131,6 +139,7 @@ class LocalFile implements File, Folder {
 
     @Override
     public File copy(String fileName, File content, LongConsumer progressListener) throws IOException {
+        checkReadOnly();
         checkFileName(fileName);
         Objects.requireNonNull(content, "Content cannot be null");
         
@@ -151,20 +160,27 @@ class LocalFile implements File, Folder {
         } catch (UnsupportedOperationException | IOException e) {
             // Ignore if setting creation time is not supported
         }
-        return new LocalFile(targetPath);
+        return new LocalFile(targetPath, provider);
     }
 
     @Override
     public Folder mkdir(String folderName) throws IOException {
+        checkReadOnly();
         checkFileName(folderName);
         final Path targetPath = path.resolve(folderName);
         Files.createDirectory(targetPath);
-        return new LocalFile(targetPath);
+        return new LocalFile(targetPath, provider);
+    }
+
+    private void checkReadOnly() throws IOException {
+        if (provider.isReadOnly()) {
+            throw new IOException("Provider is read-only");
+        }
     }
 
     @Override
     public String toString() {
-        return "local:" + path.toAbsolutePath().toString();
+        return "local:" + path.toAbsolutePath().toString() + (provider.isReadOnly() ? " (read-only)" : "");
     }
 }
 

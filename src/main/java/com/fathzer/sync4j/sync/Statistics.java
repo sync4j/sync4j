@@ -35,6 +35,12 @@ public class Statistics {
         Counter() {
             this(Objects.requireNonNull(new AtomicLong()), Objects.requireNonNull(new AtomicLong()));
         }
+        /**
+         * Creates a new counter with the specified total and done values.
+         *
+         * @param total The total number of tasks to be processed
+         * @param done The number of tasks that have been completed
+         */
         public Counter(long total, long done) {
             this(new AtomicLong(total), new AtomicLong(done));
         }

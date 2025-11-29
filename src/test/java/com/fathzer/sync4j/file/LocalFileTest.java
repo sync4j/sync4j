@@ -1,10 +1,11 @@
 package com.fathzer.sync4j.file;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static com.fathzer.sync4j.file.LocalProvider.INSTANCE;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,11 +24,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.mockStatic;
-
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 
@@ -40,6 +40,8 @@ class LocalFileTest {
     private static Entry file;
     private static Entry nonExisting;
     
+    private static final LocalProvider INSTANCE = new LocalProvider();
+
     @Mock
     private HashAlgorithm mockHashAlgorithm;
 
@@ -255,9 +257,44 @@ class LocalFileTest {
         assertFalse(Files.exists(tmpDirPath));
     }
 
-    private File createFile(String content) throws IOException{
+    private File createFile(String content) throws IOException {
         File result = Mockito.mock(File.class);
         when(result.getInputStream()).thenReturn(new ByteArrayInputStream(content.getBytes()));
         return result;
+    }
+
+    @Test
+    void testReadOnly(@TempDir Path tempDir) throws IOException {
+        try (FileProvider provider = new LocalProvider()) {
+            assertTrue(provider.isReadOnlySupported(), "MemoryFileProvider should support read-only mode");
+            assertFalse(provider.isReadOnly(), "Provider should not be read-only by default");
+
+            Folder root = provider.get(tempDir.toString()).asFolder();
+
+            // Create a file
+            File file = root.copy("test.txt", createFile("content"), null);
+
+            // When read-only is set
+            provider.setReadOnly(true);
+
+            // All modifications should fail
+            assertThrows(IOException.class, () -> file.delete());
+            assertThrows(IOException.class, () -> root.mkdir("subfolder"));
+            assertThrows(IOException.class, () -> root.copy("copy.txt", file, null));
+
+            // But file can be read and directory listed
+            try (InputStream is = file.getInputStream()) {
+                byte[] readContent = is.readAllBytes();
+                assertEquals("content", new String(readContent, StandardCharsets.UTF_8));
+            }
+            assertEquals(1, root.list().size());
+
+            // When read-only is unset, all modifications should work
+            provider.setReadOnly(false);
+            assertFalse(provider.isReadOnly(), "Provider should not be read-only after unsetting");
+            assertDoesNotThrow(() -> root.mkdir("subfolder"));
+            assertDoesNotThrow(() -> root.copy("copy.txt", file, null));
+            assertDoesNotThrow(file::delete);
+        }
     }
 }

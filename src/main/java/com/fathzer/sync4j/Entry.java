@@ -85,6 +85,8 @@ public interface Entry {
      * Deletes this entry.
      * <br>This method deletes recursively folders.
      * <br>For non existing entries, the method does nothing.
+     * <br>Warning, depending on the {@link FileProvider} implementation, using this instance after deletion may have unexpected results.
+     * <br>And, in case of this being a folder, using any of its children may also have unexpected results!
      * @throws IOException if an I/O error occurs
      */
     void delete() throws IOException;

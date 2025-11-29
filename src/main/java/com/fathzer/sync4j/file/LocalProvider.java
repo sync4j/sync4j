@@ -13,18 +13,30 @@ import com.fathzer.sync4j.HashAlgorithm;
  */
 @SuppressWarnings("java:S6548")
 public class LocalProvider implements FileProvider {
-    /**
-     * The singleton instance of this provider.
-     */
-    public static final LocalProvider INSTANCE = new LocalProvider();
-    
+    private boolean readOnly;
+
     /**
      * Constructor.
      */
-    private LocalProvider() {
-        // Do nothing
+    public LocalProvider() {
+        this.readOnly = false;
     }
-    
+
+    @Override
+    public boolean isReadOnlySupported() {
+        return true;
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    @Override
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
     @Override
     public List<HashAlgorithm> getSupportedHash() {
         return List.of(HashAlgorithm.values());
@@ -32,6 +44,6 @@ public class LocalProvider implements FileProvider {
 
     @Override
     public Entry get(String path) throws IOException {
-        return new LocalFile(Paths.get(path));
+        return new LocalFile(Paths.get(path), this);
     }
 }

@@ -35,7 +35,7 @@ public interface Folder extends Entry {
     }
 
     /**
-     * Write a file in this folder.
+     * Copy a file in this folder.
      * <br>
      * If the file already exists, it is overwritten.
      * @param fileName the name of the file to write (can't be empty or null, can't contain path separator)

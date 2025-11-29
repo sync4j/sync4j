@@ -18,6 +18,7 @@ This makes it unusable in application development if you need to track progress 
 
 - Synchronize files and folders
 - Support for local files and folders included in this project (see [LocalProvider](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/file/LocalProvider.java))
+- Support for memory files and folders included in this project (see [MemoryFileProvider](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/memory/MemoryFileProvider.java))
 - Support for remote files and folders:
     Currently there's only one provider supported:
     - [pCloud](https://www.pcloud.com/) -> [pCloudProvider](https://github.com/fathzer/sync4j-pcloud)
@@ -38,7 +39,7 @@ Import with Maven:
 </dependency>
 ```
 
-If you need to use a provider other than local, you should add the corresponding dependency.
+If you need to use a provider other than local or memory, you should add the corresponding dependency.
 
 ## Usage
 
@@ -76,6 +77,8 @@ A basic synchronization example (synchronizes a pCloud folder to a local folder)
 
 Please note that by default, the synchronization will use 1 thread to walk folders, 1 thread to copy files and 1 thread to compare files. Increasing the number of threads can speed up the synchronization, but it may cause some issues with the remote storage (depending on the provider's policies).
 
+If a provider does not support concurrent operations, it is recommended to use a single thread by setting the [performance](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/SyncParameters.java#L50) parameter to zero copy threads and zero compare threads. Compare and copy operations will then be performed sequentially with the folder walking.
+
 ## Implement your own provider
 
 A provider is an implementation of the [FileProvider](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/FileProvider.java) interface. It allows you to access files on a remote storage (ssh, s3, etc...).
@@ -85,4 +88,4 @@ To implement your own provider, you should:
 - Implement the [Folder](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/Folder.java) interface.
 - Implement the [File](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/File.java) interface.
 
-An example of a provider is the [pCloudProvider](https://github.com/fathzer/sync4j-pcloud).
+An example of a non trivial provider is the [pCloudProvider](https://github.com/fathzer/sync4j-pcloud).

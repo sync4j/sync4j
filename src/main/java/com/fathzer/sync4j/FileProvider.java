@@ -33,6 +33,38 @@ public interface FileProvider extends AutoCloseable {
     }
 
     /**
+     * Returns true if the provider supports read-only operations.
+     * <br>
+     * By default, this method returns false.
+     * 
+     * @return a boolean
+     */
+    default boolean isReadOnlySupported() {
+        return false;
+    }
+
+    /**
+     * Returns true if the provider is read-only.
+     * <br>
+     * By default, this method returns false.
+     * 
+     * @return a boolean
+     */
+    default boolean isReadOnly() {
+        return false;
+    }
+
+    /**
+     * Sets the provider to read-only mode.
+     * <br>
+     * By default, this method does nothing.
+     * 
+     * @param readOnly a boolean
+     */
+    default void setReadOnly(boolean readOnly) {
+    }
+
+    /**
      * Returns the file or folder at the given path.
      * @param path the path of the file. <br>
      * <b>Warning</b>: The path syntax is provider and/or platform dependent.

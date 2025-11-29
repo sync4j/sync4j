@@ -1,66 +1,48 @@
 package com.fathzer.sync4j.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static com.fathzer.sync4j.util.PrivateFields.getFieldValue;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.Folder;
-import com.fathzer.sync4j.sync.Event.Action;
+import com.fathzer.sync4j.sync.Context.TaskCounter;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
+@ExtendWith(MockitoExtension.class)
 class WalkTaskTest {
     @FunctionalInterface
     static interface IOFunction<V> {
         V apply(Task<V, ?> task) throws IOException;
     }
 
+    @Mock
     private Context context;
+    @Mock
     private Folder sourceFolder;
+    @Mock
     private Folder destinationFolder;
-    private List<Entry> sourceList;
-    private List<Entry> destinationList;
-    private SyncParameters parameters;
-
-    private IOFunction<?> syncFunction;
-    private BiConsumer<Throwable, Action> errorFunction;
 
     @BeforeEach
     void setUp() {
-        parameters = new SyncParameters();
-        context = new Context(parameters) {
-            @SuppressWarnings("unchecked")
-            @Override
-            <V> V executeSync(Task<V, ?> task) throws IOException {
-                return ((IOFunction<V>)syncFunction).apply(task);
-            }
-
-            @Override
-            void processError(Throwable e, Action action) {
-                errorFunction.accept(e, action);
-            }
-        };
-
-        // Create mocks
-        sourceFolder = mock(Folder.class);
-        destinationFolder = mock(Folder.class);
-
-        // Initialize empty lists
-        sourceList = new ArrayList<>();
-        destinationList = new ArrayList<>();
+        TaskCounter taskCounter = new TaskCounter();
+        when(context.taskCounter()).thenReturn(taskCounter);
     }
 
     @Test
     void testConstructor() {
         // When
+        List<Entry> destinationList = List.of();
         WalkTask task = new WalkTask(context, sourceFolder, destinationFolder, destinationList);
 
         // Then - Use reflection to access private fields
@@ -78,10 +60,16 @@ class WalkTaskTest {
     }
 
     @Test
-    void testList() {
-        WalkTask walkTask = new WalkTask(context, sourceFolder, destinationFolder, destinationList);
+    void testList() throws IOException {
+        SyncParameters parameters = new SyncParameters();
+        when(context.params()).thenReturn(parameters);
+        Statistics statistics = new Statistics();
+        when(context.statistics()).thenReturn(statistics);
+
         // When
-        syncFunction = t -> sourceList;
+        List<Entry> sourceList = List.of();
+        WalkTask walkTask = new WalkTask(context, sourceFolder, destinationFolder, null);
+        when(context.executeSync(any(ListTask.class))).thenReturn(sourceList);
         List<Entry> result = walkTask.list(sourceFolder);
 
         // Then
@@ -89,14 +77,13 @@ class WalkTaskTest {
 
         // When
         IOException error = new IOException();
-        syncFunction = t -> { throw error; };
-        errorFunction = (e, action) -> {
-            assertSame(error, e);
-            assertSame(Event.ListAction.class, action.getClass());
-        };
+        when(context.executeSync(any(ListTask.class))).thenAnswer(invocation -> {
+            throw error;
+        });
         result = walkTask.list(sourceFolder);
 
         // Then
         assertNull(result);
+        verify(context).processError(same(error), any(Event.ListAction.class));
     }
 }
