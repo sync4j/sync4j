@@ -14,18 +14,35 @@ import jakarta.annotation.Nonnull;
  */
 class MemoryFile extends MemoryEntry implements File {
     private byte[] content;
-    private final long creationTime;
-    private final long lastModified;
-
-    MemoryFile(@Nonnull String path, @Nonnull MemoryFileProvider provider, @Nonnull byte[] content) {
-        this(path, provider, content, System.currentTimeMillis(), System.currentTimeMillis());
-    }
+    private long creationTime;
+    private long lastModified;
 
     MemoryFile(@Nonnull String path, @Nonnull MemoryFileProvider provider, @Nonnull byte[] content, long creationTime,
             long lastModified) {
         super(path, provider);
         this.content = content.clone();
         this.creationTime = creationTime;
+        this.lastModified = lastModified;
+    }
+
+    void setCreationTime(long creationTime) {
+        this.creationTime = creationTime;
+    }
+
+    /**
+     * Sets the content of the file.
+     * <p>
+     * This method updates the last modified time to the current time.
+     * </p>
+     * 
+     * @param content the content of the file
+     */
+    public void setContent(byte[] content) {
+        this.setContent(content, System.currentTimeMillis());
+    }
+
+    void setContent(byte[] content, long lastModified) {
+        this.content = content.clone();
         this.lastModified = lastModified;
     }
 

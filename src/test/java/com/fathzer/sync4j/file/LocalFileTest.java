@@ -272,18 +272,18 @@ class LocalFileTest {
             Folder root = provider.get(tempDir.toString()).asFolder();
 
             // Create a file
-            File file = root.copy("test.txt", createFile("content"), null);
+            File testFile = root.copy("test.txt", createFile("content"), null);
 
             // When read-only is set
             provider.setReadOnly(true);
 
             // All modifications should fail
-            assertThrows(IOException.class, () -> file.delete());
+            assertThrows(IOException.class, testFile::delete);
             assertThrows(IOException.class, () -> root.mkdir("subfolder"));
-            assertThrows(IOException.class, () -> root.copy("copy.txt", file, null));
+            assertThrows(IOException.class, () -> root.copy("copy.txt", testFile, null));
 
             // But file can be read and directory listed
-            try (InputStream is = file.getInputStream()) {
+            try (InputStream is = testFile.getInputStream()) {
                 byte[] readContent = is.readAllBytes();
                 assertEquals("content", new String(readContent, StandardCharsets.UTF_8));
             }
@@ -293,8 +293,8 @@ class LocalFileTest {
             provider.setReadOnly(false);
             assertFalse(provider.isReadOnly(), "Provider should not be read-only after unsetting");
             assertDoesNotThrow(() -> root.mkdir("subfolder"));
-            assertDoesNotThrow(() -> root.copy("copy.txt", file, null));
-            assertDoesNotThrow(file::delete);
+            assertDoesNotThrow(() -> root.copy("copy.txt", testFile, null));
+            assertDoesNotThrow(testFile::delete);
         }
     }
 }

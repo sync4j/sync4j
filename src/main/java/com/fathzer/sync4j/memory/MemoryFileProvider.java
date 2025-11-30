@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.fathzer.sync4j.Entry;
+import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 import com.fathzer.sync4j.helper.AbstractFileProvider;
 
@@ -134,60 +136,6 @@ public class MemoryFileProvider extends AbstractFileProvider {
         if (!parent.isFolder()) {
             throw new IOException("Parent is not a directory: " + parentPath);
         }
-    }
-
-    /**
-     * Creates a file at the specified path with the given content.
-     * This is a convenience method for testing.
-     * 
-     * @param path    the path of the file
-     * @param content the content of the file
-     * @return the created file
-     * @throws IOException if the parent directory does not exist or is not a folder, or if the provider is read-only
-     */
-    @Nonnull
-    public MemoryFile createFile(@Nonnull String path, @Nonnull byte[] content) throws IOException {
-        checkReadOnly();
-        validateParentExists(path);
-        MemoryFile file = new MemoryFile(path, this, content);
-        entries.put(path, file);
-        return file;
-    }
-
-    /**
-     * Creates a file at the specified path with the given content and timestamps.
-     * 
-     * @param path         the path of the file
-     * @param content      the content of the file
-     * @param creationTime the creation time in milliseconds since epoch
-     * @param lastModified the last modified time in milliseconds since epoch
-     * @return the created file
-     * @throws IOException if the parent directory does not exist or is not a folder, or if the provider is read-only
-     */
-    @Nonnull
-    public MemoryFile createFile(@Nonnull String path, @Nonnull byte[] content, long creationTime, long lastModified)
-            throws IOException {
-        checkReadOnly();
-        validateParentExists(path);
-        MemoryFile file = new MemoryFile(path, this, content, creationTime, lastModified);
-        entries.put(path, file);
-        return file;
-    }
-
-    /**
-     * Creates a folder at the specified path.
-     * 
-     * @param path the path of the folder
-     * @return the created folder
-     * @throws IOException if the parent directory does not exist or is not a folder, or if the provider is read-only
-     */
-    @Nonnull
-    public MemoryFolder createFolder(@Nonnull String path) throws IOException {
-        checkReadOnly();
-        validateParentExists(path);
-        MemoryFolder folder = new MemoryFolder(path, this);
-        entries.put(path, folder);
-        return folder;
     }
 
     /**

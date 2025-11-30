@@ -30,7 +30,7 @@ public abstract class AbstractFileProvider implements FileProvider {
      * @param supportedHashAlgorithms list of hash algorithms that this provider supports
      * @param fastListSupported whether this provider supports fast listing operations
      */
-    public AbstractFileProvider(boolean readOnlySupported, List<HashAlgorithm> supportedHashAlgorithms, boolean fastListSupported) {
+    protected AbstractFileProvider(boolean readOnlySupported, List<HashAlgorithm> supportedHashAlgorithms, boolean fastListSupported) {
         this.readOnly = false;
         this.readOnlySupported = readOnlySupported;
         this.supportedHashAlgorithms = supportedHashAlgorithms;
