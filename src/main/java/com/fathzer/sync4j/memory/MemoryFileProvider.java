@@ -2,64 +2,42 @@ package com.fathzer.sync4j.memory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.fathzer.sync4j.Entry;
-import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.HashAlgorithm;
+import com.fathzer.sync4j.helper.AbstractFileProvider;
 
 import jakarta.annotation.Nonnull;
 
 /**
- * In-memory implementation of FileProvider for testing purposes.
+ * In-memory implementation of FileProvider.
  * Files and folders are stored in memory using a Map structure.
+ * <br><br>
+ * This provider supports all hash algorithms and read-only mode.
  */
-public class MemoryFileProvider implements FileProvider {
+public class MemoryFileProvider extends AbstractFileProvider {
+    //FIXME: This implementation is not thread-safe.
+
     private final Map<String, MemoryEntry> entries;
-    private boolean readOnly;
 
     /**
      * Creates a new in-memory file provider.
      */
     public MemoryFileProvider() {
-        this.entries = new HashMap<>();
-        this.readOnly = false;
+        super(true, List.of(HashAlgorithm.values()), false);
+        this.entries = new ConcurrentHashMap<>();
         // Create root folder
         entries.put("/", new MemoryFolder("/", this));
     }
 
     @Override
     @Nonnull
-    public List<HashAlgorithm> getSupportedHash() {
-        return List.of(HashAlgorithm.values());
-    }
-
-    @Override
-    public boolean isReadOnlySupported() {
-        return true;
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
-    @Override
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
-    }
-
-    @Override
-    @Nonnull
     public Entry get(@Nonnull String path) throws IOException {
         MemoryEntry entry = entries.get(path);
-        if (entry != null) {
-            return entry;
-        }
-        // Return a non-existing entry
-        return new NonExistingEntry(path, this);
+        return entry == null ? new NonExistingEntry(path, this) : entry;
     }
 
     /**
@@ -155,17 +133,6 @@ public class MemoryFileProvider implements FileProvider {
         }
         if (!parent.isFolder()) {
             throw new IOException("Parent is not a directory: " + parentPath);
-        }
-    }
-
-    /**
-     * Checks if the provider is read-only and throws an exception if it is.
-     * 
-     * @throws IOException if the provider is read-only
-     */
-    private void checkReadOnly() throws IOException {
-        if (readOnly) {
-            throw new IOException("Provider is read-only");
         }
     }
 

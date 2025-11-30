@@ -105,7 +105,7 @@ class LocalFile implements File, Folder {
 
     @Override
     public void delete() throws IOException {
-        checkReadOnly();
+        provider.checkWriteable();
         if (isFolder()) {
             deletedFolder(path);
         } else if (exists()) {
@@ -139,7 +139,7 @@ class LocalFile implements File, Folder {
 
     @Override
     public File copy(String fileName, File content, LongConsumer progressListener) throws IOException {
-        checkReadOnly();
+        provider.checkWriteable();
         checkFileName(fileName);
         Objects.requireNonNull(content, "Content cannot be null");
         
@@ -165,17 +165,11 @@ class LocalFile implements File, Folder {
 
     @Override
     public Folder mkdir(String folderName) throws IOException {
-        checkReadOnly();
+        provider.checkWriteable();
         checkFileName(folderName);
         final Path targetPath = path.resolve(folderName);
         Files.createDirectory(targetPath);
         return new LocalFile(targetPath, provider);
-    }
-
-    private void checkReadOnly() throws IOException {
-        if (provider.isReadOnly()) {
-            throw new IOException("Provider is read-only");
-        }
     }
 
     @Override

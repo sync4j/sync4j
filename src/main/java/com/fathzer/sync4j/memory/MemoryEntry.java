@@ -1,6 +1,7 @@
 package com.fathzer.sync4j.memory;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.FileProvider;
@@ -16,8 +17,8 @@ abstract class MemoryEntry implements Entry {
     protected final MemoryFileProvider provider;
 
     protected MemoryEntry(@Nonnull String path, @Nonnull MemoryFileProvider provider) {
-        this.path = path;
-        this.provider = provider;
+        this.path = Objects.requireNonNull(path);
+        this.provider = Objects.requireNonNull(provider);
     }
 
     @Override

@@ -5,45 +5,28 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import com.fathzer.sync4j.Entry;
-import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.HashAlgorithm;
+import com.fathzer.sync4j.helper.AbstractFileProvider;
 
 /**
  * A local file provider.
  */
 @SuppressWarnings("java:S6548")
-public class LocalProvider implements FileProvider {
-    private boolean readOnly;
+public class LocalProvider extends AbstractFileProvider {
 
     /**
      * Constructor.
      */
     public LocalProvider() {
-        this.readOnly = false;
-    }
-
-    @Override
-    public boolean isReadOnlySupported() {
-        return true;
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
-    @Override
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
-    }
-
-    @Override
-    public List<HashAlgorithm> getSupportedHash() {
-        return List.of(HashAlgorithm.values());
+        super(true, List.of(HashAlgorithm.values()), false);
     }
 
     @Override
     public Entry get(String path) throws IOException {
         return new LocalFile(Paths.get(path), this);
+    }
+
+    void checkWriteable() throws IOException {
+        super.checkReadOnly();
     }
 }
