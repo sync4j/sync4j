@@ -41,7 +41,7 @@ class DryRunFolder implements Folder {
     }
 
     @Override
-    public Entry getParent() {
+    public Folder getParent() {
         throw new UnsupportedOperationException();
     }
 

@@ -24,7 +24,7 @@ public interface File extends Entry {
      * @throws IOException if an I/O error occurs
      */
     default long getCreationTime() throws IOException {
-        return getLastModified();
+        return getLastModifiedTime();
     }
 
     /**
@@ -33,7 +33,7 @@ public interface File extends Entry {
      * @return the last modified time of this file
      * @throws IOException if an I/O error occurs
      */
-    long getLastModified() throws IOException;
+    long getLastModifiedTime() throws IOException;
 
     /**
      * Returns the hash of this file.

@@ -88,7 +88,7 @@ class FileProviderTest {
         }
         
         @Override
-        public Entry getParent() throws IOException {
+        public Folder getParent() throws IOException {
             return null;
         }
         

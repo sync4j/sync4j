@@ -15,12 +15,12 @@ class FileTest {
     void setUp() throws IOException {
         long lastModified = System.currentTimeMillis();
         file = Mockito.mock(File.class, Mockito.CALLS_REAL_METHODS);
-        Mockito.when(file.getLastModified()).thenReturn(lastModified);
+        Mockito.when(file.getLastModifiedTime()).thenReturn(lastModified);
     }
     
     @Test
     void testDefaultGetCreationTime() throws IOException {
-        assertEquals(file.getLastModified(), file.getCreationTime(), "Default creation time should equal last modified");
+        assertEquals(file.getLastModifiedTime(), file.getCreationTime(), "Default creation time should equal last modified");
     }
     
     @Test

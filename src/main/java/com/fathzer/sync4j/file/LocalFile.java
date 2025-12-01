@@ -58,7 +58,7 @@ class LocalFile implements File, Folder {
     }
 
     @Override
-    public Entry getParent() {
+    public Folder getParent() {
         final Path parent = path.getParent();
         return parent == null ? null : new LocalFile(parent, provider);
     }
@@ -87,7 +87,7 @@ class LocalFile implements File, Folder {
     }
 
     @Override
-    public long getLastModified() throws IOException {
+    public long getLastModifiedTime() throws IOException {
         return Files.getLastModifiedTime(path).toMillis();
     }
 
@@ -152,7 +152,7 @@ class LocalFile implements File, Folder {
         }
         
         // Copy file attributes
-        Files.setLastModifiedTime(targetPath, FileTime.fromMillis(content.getLastModified()));
+        Files.setLastModifiedTime(targetPath, FileTime.fromMillis(content.getLastModifiedTime()));
         
         // Note: Setting creation time is platform dependent and may not work on all systems
         try {

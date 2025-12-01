@@ -79,7 +79,7 @@ public interface Entry {
      * @throws IOException if an I/O error occurs or if this entry does not exists and its parent exists and is a file
      */
     @Nullable
-    Entry getParent() throws IOException;
+    Folder getParent() throws IOException;
     
     /**
      * Deletes this entry.

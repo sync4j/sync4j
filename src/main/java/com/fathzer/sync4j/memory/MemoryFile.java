@@ -12,21 +12,35 @@ import jakarta.annotation.Nonnull;
 /**
  * In-memory implementation of a file.
  */
-class MemoryFile extends MemoryEntry implements File {
+public class MemoryFile extends MemoryEntry implements File {
     private byte[] content;
     private long creationTime;
     private long lastModified;
 
-    MemoryFile(@Nonnull String path, @Nonnull MemoryFileProvider provider, @Nonnull byte[] content, long creationTime,
+    MemoryFile(@Nonnull String path, @Nonnull MemoryFileProvider provider, byte[] content, long creationTime,
             long lastModified) {
         super(path, provider);
-        this.content = content.clone();
+        this.content = content == null ? null : content.clone();
         this.creationTime = creationTime;
         this.lastModified = lastModified;
     }
 
-    void setCreationTime(long creationTime) {
+    /**
+     * Sets the creation time of the file.
+     * 
+     * @param creationTime the creation time of the file
+     */
+    public void setCreationTime(long creationTime) {
         this.creationTime = creationTime;
+    }
+
+    /**
+     * Sets the last modified time of the file.
+     * 
+     * @param lastModified the last modified time of the file
+     */
+    public void setLastModifiedTime(long lastModified) {
+        this.lastModified = lastModified;
     }
 
     /**
@@ -36,14 +50,17 @@ class MemoryFile extends MemoryEntry implements File {
      * </p>
      * 
      * @param content the content of the file
+     * @throws IOException if the provider is read-only
      */
-    public void setContent(byte[] content) {
-        this.setContent(content, System.currentTimeMillis());
+    public void setContent(byte[] content) throws IOException {
+        provider.checkWriteOperationsAllowed();
+        this.content = content.clone();
+        this.lastModified = System.currentTimeMillis();
     }
 
-    void setContent(byte[] content, long lastModified) {
-        this.content = content.clone();
-        this.lastModified = lastModified;
+    @Override
+    public boolean exists() {
+        return content != null;
     }
 
     @Override
@@ -73,7 +90,7 @@ class MemoryFile extends MemoryEntry implements File {
     }
 
     @Override
-    public long getLastModified() throws IOException {
+    public long getLastModifiedTime() throws IOException {
         if (content == null) {
             throw new IOException("File does not exist: " + path);
         }
@@ -100,7 +117,11 @@ class MemoryFile extends MemoryEntry implements File {
 
     @Override
     public void delete() throws IOException {
-        super.delete();
+        deleteParentReference();
+        markDeleted();
+    }
+
+    void markDeleted() {
         content = null;
     }
 }

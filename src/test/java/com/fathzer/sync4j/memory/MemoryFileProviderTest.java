@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,26 +23,30 @@ class MemoryFileProviderTest {
     @BeforeEach
     void setUp() throws IOException {
         provider = new MemoryFileProvider();
-        //TODO Not sure having "/" as name is correct
         root = (MemoryFolder) provider.get("/");
     }
 
     @Test
-    void testExists() throws IOException {
-        //TODO Not sure having "/" as name is correct
+    void testRoot() throws IOException {
         assertTrue(root.exists(), "Root should exist");
         assertTrue(root.isFolder(), "Root should be a folder");
         assertFalse(root.isFile(), "Root should not be a file");
         assertNull(root.getParent(), "Root should have no parent");
         assertNull(root.getParentPath(), "Root should have no parent path");
-        assertEquals("/", root.getName(), "Root should have no name");
+        assertEquals("", root.getName(), "Root should have no name");
+    }
 
+    @Test
+    void testNonExistingEntry() throws IOException {
         Entry entry = provider.get("/nonexistent");
         assertFalse(entry.exists(), "Non-existing entry should not exist");
         assertFalse(entry.isFile(), "Non-existing entry should not be a file");
         assertFalse(entry.isFolder(), "Non-existing entry should not be a folder");
+    }
 
-        assertEquals(Set.of(HashAlgorithm.values()), Set.copyOf(provider.getSupportedHash()));
+    @Test
+    void testSupportedHash() {
+        assertEquals(List.of(HashAlgorithm.values()), provider.getSupportedHash());
     }
 
     @Test
@@ -54,7 +57,7 @@ class MemoryFileProviderTest {
         assertTrue(file.exists(), "File should exist");
         assertTrue(file.isFile(), "Entry should be a file");
         assertFalse(file.isFolder(), "Entry should not be a folder");
-        assertEquals("/test.txt", file.getName());
+        assertEquals("test.txt", file.getName());
         assertEquals(content.length, file.getSize());
 
         // Verify content
@@ -64,7 +67,7 @@ class MemoryFileProviderTest {
         }
 
         // Recreate a file at /test.txt should not throw any exception
-        assertDoesNotThrow(() -> root.createFile("test.txt", "content".getBytes(StandardCharsets.UTF_8)));
+        assertThrows(IOException.class, () -> root.createFile("test.txt", "content".getBytes(StandardCharsets.UTF_8)));
 
         // Trying to create a file at a folder location should throw IOException
         root.mkdir("folder");
@@ -92,7 +95,9 @@ class MemoryFileProviderTest {
         Folder parent = root.mkdir("parent");
 
         Folder newFolder = parent.mkdir("child");
-        assertEquals("/parent/child", newFolder.getName());
+        assertEquals("child", newFolder.getName());
+        assertEquals("/parent", newFolder.getParentPath());
+        assertSame(parent, newFolder.getParent());
         assertTrue(newFolder.exists());
 
         // Verify it's in the file system
@@ -110,11 +115,15 @@ class MemoryFileProviderTest {
         MemoryFolder dest = (MemoryFolder) root.mkdir("dest");
 
         byte[] content = "test content".getBytes(StandardCharsets.UTF_8);
-        File sourceFile = source.createFile("file.txt", content);
+        MemoryFile sourceFile = source.createFile("file.txt", content);
+        sourceFile.setCreationTime(123456789);
+        sourceFile.setLastModifiedTime(167654321);
 
         File copiedFile = dest.copy("copied.txt", sourceFile, null);
-        assertEquals("/dest/copied.txt", copiedFile.getName());
+        assertEquals("copied.txt", copiedFile.getName());
         assertEquals(content.length, copiedFile.getSize());
+        assertEquals(sourceFile.getCreationTime(), copiedFile.getCreationTime());
+        assertEquals(sourceFile.getLastModifiedTime(), copiedFile.getLastModifiedTime());
 
         // Verify content
         try (InputStream is = copiedFile.getInputStream()) {
@@ -144,13 +153,13 @@ class MemoryFileProviderTest {
         assertFalse(entry.exists());
         assertThrows(IOException.class, entry::getSize, "Should throw IOException when file does not exist");
         assertThrows(IOException.class, entry::getCreationTime, "Should throw IOException when file does not exist");
-        assertThrows(IOException.class, entry::getLastModified, "Should throw IOException when file does not exist");
+        assertThrows(IOException.class, entry::getLastModifiedTime, "Should throw IOException when file does not exist");
         assertThrows(IOException.class, () -> entry.getHash(HashAlgorithm.SHA256), "Should throw IOException when file does not exist");
         assertThrows(IOException.class, entry::getInputStream, "Should throw IOException when file does not exist");
     }
 
     @Test
-    void testDeleteFolderRecursive() throws IOException {
+    void testDeleteFolder() throws IOException {
         MemoryFolder parent = (MemoryFolder) root.mkdir("parent");
         parent.createFile("file1.txt", "content1".getBytes(StandardCharsets.UTF_8));
         MemoryFolder subfolder = (MemoryFolder) parent.mkdir("subfolder");
@@ -176,7 +185,11 @@ class MemoryFileProviderTest {
         assertThrows(IOException.class, () -> parent.copy("child", null, null), "Should throw IOException when folder does not exist");
 
         // Check optional behavior, previously listed entries no more exists
+        assertFalse(subfolder.exists());
         assertFalse(fileInSubfolder.exists());
+
+        // Check root folder can't be deleted
+        assertThrows(IOException.class, () -> root.delete(), "Should throw IOException when root folder is deleted");
     }
 
     @Test
@@ -188,7 +201,7 @@ class MemoryFileProviderTest {
         Entry entry = file.getParent();
 
         assertNotNull(entry);
-        assertEquals("/parent", entry.getName());
+        assertEquals("parent", entry.getName());
         assertTrue(entry.isFolder());
     }
 
@@ -229,10 +242,12 @@ class MemoryFileProviderTest {
         long lastModified = 2000000L;
         byte[] content = "content".getBytes(StandardCharsets.UTF_8);
 
-        File file = root.createFile("test.txt", content, creationTime, lastModified);
+        MemoryFile file = root.createFile("test.txt", content);
+        file.setCreationTime(creationTime);
+        file.setLastModifiedTime(lastModified);
 
         assertEquals(creationTime, file.getCreationTime());
-        assertEquals(lastModified, file.getLastModified());
+        assertEquals(lastModified, file.getLastModifiedTime());
     }
 
     @Test
@@ -272,7 +287,7 @@ class MemoryFileProviderTest {
         assertFalse(provider.isReadOnly(), "Provider should not be read-only by default");
 
         // Create a file
-        File file = root.createFile("test.txt", "content".getBytes(StandardCharsets.UTF_8));
+        MemoryFile file = root.createFile("test.txt", "content".getBytes(StandardCharsets.UTF_8));
 
         // When read-only is set
         provider.setReadOnly(true);
@@ -283,6 +298,7 @@ class MemoryFileProviderTest {
         assertThrows(IOException.class, file::delete);
         assertThrows(IOException.class, () -> root.mkdir("subfolder"));
         assertThrows(IOException.class, () -> root.copy("copy.txt", file, null));
+        assertThrows(IOException.class, () -> file.setContent("new content".getBytes(StandardCharsets.UTF_8)));
 
         // But file can be read and directory listed
         try (InputStream is = file.getInputStream()) {
@@ -299,5 +315,6 @@ class MemoryFileProviderTest {
         assertDoesNotThrow(() -> root.mkdir("subfolder"));
         assertDoesNotThrow(() -> root.copy("copy.txt", file, null));
         assertDoesNotThrow(file::delete);
+        assertDoesNotThrow(() -> file.setContent("new content".getBytes(StandardCharsets.UTF_8)));
     }
 }

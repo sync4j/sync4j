@@ -45,13 +45,13 @@ class FileComparatorTest {
     @Test
     void testModDateComparator() throws Exception {
         // Given
-        when(file1.getLastModified()).thenReturn(1000L);
-        when(file2.getLastModified()).thenReturn(1000L);
+        when(file1.getLastModifiedTime()).thenReturn(1000L);
+        when(file2.getLastModifiedTime()).thenReturn(1000L);
         
         // When/Then
         assertTrue(FileComparator.MOD_DATE.areSame(file1, file2), "Files with same modification date should be equal");
         
-        when(file2.getLastModified()).thenReturn(2000L);
+        when(file2.getLastModifiedTime()).thenReturn(2000L);
         assertFalse(FileComparator.MOD_DATE.areSame(file1, file2), "Files with different modification dates should not be equal");
     }
     
@@ -89,7 +89,7 @@ class FileComparatorTest {
     void testCombinedComparator() throws Exception {
         // Given
         FileComparator sizeComparator = (f1, f2) -> f1.getSize() == f2.getSize();
-        FileComparator modDateComparator = (f1, f2) -> f1.getLastModified() == f2.getLastModified();
+        FileComparator modDateComparator = (f1, f2) -> f1.getLastModifiedTime() == f2.getLastModifiedTime();
         
         // When
         FileComparator combined = FileComparator.of(Arrays.asList(sizeComparator, modDateComparator));
@@ -97,12 +97,12 @@ class FileComparatorTest {
         // Then
         when(file1.getSize()).thenReturn(1000L);
         when(file2.getSize()).thenReturn(1000L);
-        when(file1.getLastModified()).thenReturn(2000L);
-        when(file2.getLastModified()).thenReturn(2000L);
+        when(file1.getLastModifiedTime()).thenReturn(2000L);
+        when(file2.getLastModifiedTime()).thenReturn(2000L);
         
         assertTrue(combined.areSame(file1, file2), "Should be equal when all comparators return true");
         
-        when(file2.getLastModified()).thenReturn(3000L);
+        when(file2.getLastModifiedTime()).thenReturn(3000L);
         assertFalse(combined.areSame(file1, file2), "Should not be equal when any comparator returns false");
     }
 }

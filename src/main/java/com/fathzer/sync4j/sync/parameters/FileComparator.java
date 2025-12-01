@@ -30,7 +30,7 @@ public interface FileComparator {
     /**
      * A comparator that compares files by last modified date.
      */
-    public static final FileComparator MOD_DATE = (f1, f2) -> f1.getLastModified() == f2.getLastModified();
+    public static final FileComparator MOD_DATE = (f1, f2) -> f1.getLastModifiedTime() == f2.getLastModifiedTime();
 
     /**
      * Returns a comparator that compares files by hash.

@@ -13,18 +13,21 @@ import jakarta.annotation.Nullable;
  * Abstract base class for in-memory entries (files and folders).
  */
 abstract class MemoryEntry implements Entry {
-    protected final String path;
-    protected final MemoryFileProvider provider;
+    final String path;
+    final MemoryFileProvider provider;
 
     protected MemoryEntry(@Nonnull String path, @Nonnull MemoryFileProvider provider) {
-        this.path = Objects.requireNonNull(path);
+        this.path = Objects.requireNonNull(path, "Path must not be null");
+        if (!path.startsWith("/")) {
+            throw new IllegalArgumentException("Path must start with '/'");
+        }
         this.provider = Objects.requireNonNull(provider);
     }
 
     @Override
     @Nonnull
     public String getName() {
-        return path;
+        return path.substring(path.lastIndexOf('/') + 1);
     }
 
     @Override
@@ -45,30 +48,25 @@ abstract class MemoryEntry implements Entry {
 
     @Override
     @Nullable
-    public Entry getParent() throws IOException {
+    public MemoryFolder getParent() throws IOException {
         String parentPath = getParentPath();
         if (parentPath == null) {
             return null;
         }
-        return provider.get(parentPath);
-    }
-
-    @Override
-    public void delete() throws IOException {
-        if (!exists()) {
-            return;
-        }
-        provider.deleteEntry(path);
-    }
-
-    @Override
-    public boolean exists() {
-        return provider.exists(path);
+        return (MemoryFolder)provider.get(parentPath);
     }
 
     @Override
     @Nonnull
     public FileProvider getFileProvider() {
         return provider;
+    }
+
+    void deleteParentReference() throws IOException {
+        provider.checkWriteOperationsAllowed();
+        if (!exists()) {
+            return;
+        }
+        getParent().removeChild(getName());
     }
 }

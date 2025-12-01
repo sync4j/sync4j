@@ -176,7 +176,7 @@ class LocalFileTest {
             mockedFiles.verify(() -> Files.size(any(Path.class)));
             
             // Test getLastModified()
-            long actualLastModified = localFile.getLastModified();
+            long actualLastModified = localFile.getLastModifiedTime();
             assertEquals(expectedLastModified, actualLastModified);
             mockedFiles.verify(() -> Files.getLastModifiedTime(any(Path.class)));
             
