@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 
@@ -23,7 +24,7 @@ class MemoryFileProviderTest {
     @BeforeEach
     void setUp() throws IOException {
         provider = new MemoryFileProvider();
-        root = (MemoryFolder) provider.get("/");
+        root = (MemoryFolder) provider.get(MemoryFileProvider.ROOT_PATH);
     }
 
     @Test
@@ -31,9 +32,17 @@ class MemoryFileProviderTest {
         assertTrue(root.exists(), "Root should exist");
         assertTrue(root.isFolder(), "Root should be a folder");
         assertFalse(root.isFile(), "Root should not be a file");
-        assertNull(root.getParent(), "Root should have no parent");
-        assertNull(root.getParentPath(), "Root should have no parent path");
         assertEquals("", root.getName(), "Root should have no name");
+        assertNull(root.getParentPath(), "Root should have no parent path");
+        assertNull(root.getParent(), "Root should have no parent");
+    }
+
+    @Test
+    void testGetProvider() throws IOException {
+        assertSame(provider, root.getFileProvider());
+
+        FileProvider fileProvider = root.getFileProvider();
+        assertSame(fileProvider, fileProvider.get("/unknown.txt").getFileProvider());
     }
 
     @Test
@@ -217,12 +226,6 @@ class MemoryFileProviderTest {
     }
 
     @Test
-    void testRootParent() throws IOException {
-        assertNull(root.getParent(), "Root should have no parent");
-        assertNull(root.getParentPath(), "Root should have no parent path");
-    }
-
-    @Test
     void testFileHash() throws IOException {
         byte[] content = "Hello, World!".getBytes(StandardCharsets.UTF_8);
         File file = root.createFile("test.txt", content);
@@ -263,10 +266,10 @@ class MemoryFileProviderTest {
         Entry entry = provider.get("/parent");
         Folder folder = entry.asFolder();
 
-        assertThrows(IllegalArgumentException.class, () -> folder.mkdir(""),
-                "Should throw for empty name");
-        assertThrows(IllegalArgumentException.class, () -> folder.mkdir("name/with/slash"),
-                "Should throw for name with slash");
+        assertThrows(IllegalArgumentException.class, () -> folder.mkdir(""), "Should throw for empty name");
+        assertThrows(IllegalArgumentException.class, () -> folder.mkdir("name/with/slash"), "Should throw for name with slash");
+
+        assertThrows(IllegalArgumentException.class, () -> provider.get("notStartingWithSlash"), "Should throw for name not starting with slash");
     }
 
     @Test

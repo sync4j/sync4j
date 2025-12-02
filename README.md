@@ -89,3 +89,5 @@ To implement your own provider, you should:
 - Implement the [File](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/File.java) interface.
 
 An example of a non trivial provider is the [pCloudProvider](https://github.com/fathzer/sync4j-pcloud).
+
+It is highly recommended that root folder is a folder with no name (empty string) at an empty path. There's a notable exception to this rule: The LocalProvider where path depends on the system's file system, and usually an empty path denotes the working directory. 

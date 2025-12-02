@@ -86,7 +86,7 @@ class MemoryFolder extends MemoryEntry implements Folder {
 
     @Override
     public void delete() throws IOException {
-        if (path.equals("/")) {
+        if (MemoryFileProvider.ROOT_PATH.equals(this.path)) {
             throw new IOException("Cannot delete root folder");
         }
         if (exists.compareAndSet(true, false)) {
@@ -193,7 +193,7 @@ class MemoryFolder extends MemoryEntry implements Folder {
     }
 
     private String buildChildPath(String name) {
-        return path.equals("/") ? "/" + name : path + "/" + name;
+        return path + "/" + name;
     }
 
     @Override
