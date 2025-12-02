@@ -57,11 +57,12 @@ public interface FileProvider extends AutoCloseable {
     /**
      * Sets the provider to read-only mode.
      * <br>
-     * By default, this method does nothing.
+     * By default, this method throws an UnsupportedOperationException.
      * 
      * @param readOnly a boolean
      */
     default void setReadOnly(boolean readOnly) {
+        throw new UnsupportedOperationException();
     }
 
     /**

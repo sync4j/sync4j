@@ -16,6 +16,13 @@ class FileProviderTest {
     void setUp() {
         provider = new TestFileProvider();
     }
+
+    @Test
+    void testDefaultReadOnly() {
+        assertFalse(provider.isReadOnlySupported(), "Default implementation should not support read-only");
+        assertFalse(provider.isReadOnly(), "Default implementation should not be read-only");
+        assertThrows(UnsupportedOperationException.class, () -> provider.setReadOnly(true), "Default implementation should throw UnsupportedOperationException");
+    }
     
     @Test
     void testDefaultGetSupportedHash() {

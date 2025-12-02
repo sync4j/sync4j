@@ -51,6 +51,15 @@ class MemoryFileProviderTest {
         assertFalse(entry.exists(), "Non-existing entry should not exist");
         assertFalse(entry.isFile(), "Non-existing entry should not be a file");
         assertFalse(entry.isFolder(), "Non-existing entry should not be a folder");
+
+        // Create a file at /test.txt
+        root.createFile("test.txt", "content".getBytes(StandardCharsets.UTF_8));
+
+        // Try to get /test.txt/something (treating a file as if it were a folder)
+        entry = provider.get("/test.txt/something");
+
+        // Should return a non-existing entry
+        assertFalse(entry.exists(), "Entry should not exist when intermediate path is a file");
     }
 
     @Test
@@ -192,6 +201,7 @@ class MemoryFileProviderTest {
         assertThrows(IOException.class, parent::list, "Should throw IOException when folder does not exist");
         assertThrows(IOException.class, () -> parent.mkdir("child"), "Should throw IOException when folder does not exist");
         assertThrows(IOException.class, () -> parent.copy("child", null, null), "Should throw IOException when folder does not exist");
+        assertThrows(IOException.class, () -> parent.createFile("child", null), "Should throw IOException when folder does not exist");
 
         // Check optional behavior, previously listed entries no more exists
         assertFalse(subfolder.exists());
