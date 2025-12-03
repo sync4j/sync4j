@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,6 +150,11 @@ class MemoryFileProviderTest {
             assertArrayEquals(content, readContent, "Copied content should match");
         }
 
+        // Check progress listener
+        AtomicLong progress = new AtomicLong();
+        dest.copy("copied.txt", sourceFile, progress::set);
+        assertEquals(sourceFile.getSize(), progress.get(), "Progress should match copied content size");
+
         File missingFile = source.createFile("missing.txt", content);
         missingFile.delete();
         assertThrows(IOException.class, () -> dest.copy("copied.txt", missingFile, null), "Should throw IOException when file does not exist");
@@ -209,6 +215,9 @@ class MemoryFileProviderTest {
 
         // Check root folder can't be deleted
         assertThrows(IOException.class, () -> root.delete(), "Should throw IOException when root folder is deleted");
+
+        // Check that folder can be deleted twice
+        assertDoesNotThrow(parent::delete);
     }
 
     @Test
@@ -308,10 +317,12 @@ class MemoryFileProviderTest {
         // All modifications should fail
         assertThrows(IOException.class, () -> root.createFile("other.txt", "content".getBytes(StandardCharsets.UTF_8)));
         assertThrows(IOException.class, () -> root.mkdir("otherfolder"));
-        assertThrows(IOException.class, file::delete);
         assertThrows(IOException.class, () -> root.mkdir("subfolder"));
         assertThrows(IOException.class, () -> root.copy("copy.txt", file, null));
+        assertThrows(IOException.class, file::delete);
         assertThrows(IOException.class, () -> file.setContent("new content".getBytes(StandardCharsets.UTF_8)));
+        assertThrows(IOException.class, () -> file.setCreationTime(1000));
+        assertThrows(IOException.class, () -> file.setLastModifiedTime(1000));
 
         // But file can be read and directory listed
         try (InputStream is = file.getInputStream()) {
@@ -329,5 +340,21 @@ class MemoryFileProviderTest {
         assertDoesNotThrow(() -> root.copy("copy.txt", file, null));
         assertDoesNotThrow(file::delete);
         assertDoesNotThrow(() -> file.setContent("new content".getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    void testConcurrentThings() throws IOException {
+        String name = "test.txt";
+        File file = root.createFile(name, "content".getBytes(StandardCharsets.UTF_8));
+        file.delete();
+        assertTrue(root.list().isEmpty(), "Root should be empty after deleting file");
+
+        assertDoesNotThrow(() -> root.removeChild(name, file));
+
+        File other = root.createFile(name, "other content".getBytes(StandardCharsets.UTF_8));
+        assertNotSame(other, file, "deleted and recreate files should be different");
+
+        root.removeChild(name, file);
+        assertSame(other, provider.get("/" + name), "removeChild should have done nothing");
     }
 }

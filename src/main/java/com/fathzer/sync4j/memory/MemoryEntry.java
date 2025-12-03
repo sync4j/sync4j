@@ -61,6 +61,6 @@ abstract class MemoryEntry implements Entry {
         if (!exists()) {
             return;
         }
-        getParent().removeChild(getName());
+        getParent().removeChild(getName(), this);
     }
 }

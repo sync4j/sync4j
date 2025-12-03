@@ -1,6 +1,7 @@
 package com.fathzer.sync4j;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -61,52 +62,10 @@ class FileProviderTest {
             if (path == null) {
                 throw new NullPointerException("Path cannot be null");
             }
-            return new TestEntry(path, this);
-        }
-    }
-    
-    private static class TestEntry implements Entry {
-        private final String name;
-        private final FileProvider provider;
-        
-        TestEntry(String name, FileProvider provider) {
-            this.name = name;
-            this.provider = provider;
-        }
-        
-        @Override
-        public boolean isFile() {
-            return false;
-        }
-        
-        @Override
-        public boolean isFolder() {
-            return false;
-        }
-        
-        @Override
-        public String getName() {
-            return name;
-        }
-        
-        @Override
-        public String getParentPath() throws IOException {
-            return null;
-        }
-        
-        @Override
-        public Folder getParent() throws IOException {
-            return null;
-        }
-        
-        @Override
-        public void delete() throws IOException {
-            // Do nothing
-        }
-        
-        @Override
-        public FileProvider getFileProvider() {
-            return provider;
+            Entry entry = mock(Entry.class, withSettings().defaultAnswer(RETURNS_DEFAULTS));
+            when(entry.getName()).thenReturn(path);
+            when(entry.getFileProvider()).thenReturn(this);
+            return entry;
         }
     }
 }

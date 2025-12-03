@@ -44,9 +44,13 @@ class MemoryFolder extends MemoryEntry implements Folder {
      * Removes a child entry by name.
      * 
      * @param name the name of the child to remove
+     * @param expectedEntry the expected entry to remove
      */
-    synchronized void removeChild(@Nonnull String name) {
-        children.remove(name);
+    synchronized void removeChild(@Nonnull String name, @Nonnull Entry expectedEntry) {
+        // Warning if entry has been replaced by another thread, it should not been replaced
+        if (expectedEntry == children.get(name)) {
+            children.remove(name);
+        }
     }
 
     @Override
@@ -73,14 +77,18 @@ class MemoryFolder extends MemoryEntry implements Folder {
 
         // Synchronized to prevent race condition on check-then-create
         synchronized (this) {
-            MemoryEntry existing = children.get(folderName);
-            if (existing != null && existing.exists()) {
-                throw new IOException("Entry already exists: " + childPath);
-            }
-
+            checkChildExists(folderName);
             MemoryFolder newFolder = new MemoryFolder(childPath, provider);
             children.put(folderName, newFolder);
             return newFolder;
+        }
+    }
+
+    private void checkChildExists(@Nonnull String childName) throws IOException {
+        MemoryEntry existing = children.get(childName);
+        if (existing != null && existing.exists()) {
+            // Warning if entry is being deleted by another thread, it could still be in the child map
+            throw new IOException("Entry already exists: " + buildChildPath(childName));
         }
     }
 
@@ -180,10 +188,7 @@ class MemoryFolder extends MemoryEntry implements Folder {
         // Synchronized to prevent race condition on check-then-create/update
         MemoryFile newFile;
         synchronized (this) {
-            MemoryEntry existing = children.get(name);
-            if (existing != null && existing.exists()) {
-                throw new IOException("File already exists: " + childPath);
-            }
+            checkChildExists(name);
             newFile = new MemoryFile(childPath, provider, content, now, now);
             children.put(name, newFile);
         }

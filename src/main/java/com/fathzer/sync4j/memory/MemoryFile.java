@@ -29,8 +29,10 @@ public class MemoryFile extends MemoryEntry implements File {
      * Sets the creation time of the file.
      * 
      * @param creationTime the creation time of the file
+     * @throws IOException if the provider is read-only
      */
-    public void setCreationTime(long creationTime) {
+    public void setCreationTime(long creationTime) throws IOException {
+        provider.checkWriteOperationsAllowed();
         this.creationTime = creationTime;
     }
 
@@ -38,8 +40,10 @@ public class MemoryFile extends MemoryEntry implements File {
      * Sets the last modified time of the file.
      * 
      * @param lastModified the last modified time of the file
+     * @throws IOException if the provider is read-only
      */
-    public void setLastModifiedTime(long lastModified) {
+    public void setLastModifiedTime(long lastModified) throws IOException {
+        provider.checkWriteOperationsAllowed();
         this.lastModified = lastModified;
     }
 
