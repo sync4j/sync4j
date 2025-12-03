@@ -128,4 +128,9 @@ public class MemoryFile extends MemoryEntry implements File {
     void markDeleted() {
         content = null;
     }
+
+    @Override
+    public String toString() {
+        return "MemoryFile{" + path + '}';
+    }
 }

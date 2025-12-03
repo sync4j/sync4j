@@ -13,15 +13,15 @@ import com.fathzer.sync4j.Folder;
 class EventTest {
 
     @Test
-    void testEventSetStatus() {
+    void testEvent() {
         Event.Action action = new Event.Action() {}; // Anonymous implementation for testing
-        Event event = new Event(action);
+        Event event = new Event(action, Event.Status.PLANNED);
         
-        assertEquals(Event.Status.PLANNED, event.getStatus());
-        event.setStatus(Event.Status.STARTED);
-        assertEquals(Event.Status.STARTED, event.getStatus());
-        
-        assertSame(action, event.getAction());
+        assertEquals(Event.Status.PLANNED, event.status());
+        assertSame(action, event.action());
+
+        assertThrows(NullPointerException.class, () -> new Event(null, Event.Status.PLANNED));
+        assertThrows(NullPointerException.class, () -> new Event(action, null));
     }
 
     @Test

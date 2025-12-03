@@ -22,14 +22,14 @@ abstract class Task<V, A extends Action> {
     @Nonnull
     private final A action;
     @Nonnull
-    private final Event event;
+    private Event.Status status;
     @Nonnull
     private final Counter counter;
     
+    @SuppressWarnings("java:S2637")
     protected Task(@Nonnull Context context, @Nonnull A action, @Nonnull Counter counter) {
         this.context = Objects.requireNonNull(context, "Context cannot be null");
         this.action = Objects.requireNonNull(action, "Action cannot be null");
-        this.event = new Event(action);
         broadcast(PLANNED);
         this.counter = Objects.requireNonNull(counter, "Counter cannot be null");
         counter.total().incrementAndGet();
@@ -44,8 +44,8 @@ abstract class Task<V, A extends Action> {
     }
 
     private void broadcast(@Nonnull Event.Status status) {
-        event.setStatus(Objects.requireNonNull(status, "Status cannot be null"));
-        context.params().eventListener().accept(event);
+        this.status = Objects.requireNonNull(status, "Status cannot be null");
+        context.params().eventListener().accept(new Event(action, status));
     }
 
     protected abstract V execute() throws IOException;
@@ -70,7 +70,7 @@ abstract class Task<V, A extends Action> {
             broadcast(COMPLETED);
             return result;
         } finally {
-            if (event.getStatus() != COMPLETED) {
+            if (status != COMPLETED) {
                 broadcast(FAILED);
             }
         }

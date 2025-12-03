@@ -15,6 +15,35 @@ import jakarta.annotation.Nonnull;
  * An event sent by the synchronizer.
  */
 public class Event {
+    private final Action action;
+    private Status status;
+    
+    Event (@Nonnull Action action, @Nonnull Status status) {
+        this.action = Objects.requireNonNull(action);
+        this.status = Objects.requireNonNull(status);
+    }
+    
+    /**
+     * Returns the action involved in the event.
+     * @return the action
+     */
+    public Action action() {
+        return action;
+    }
+
+    /**
+     * Returns the status of the action.
+     * @return the status
+     */
+    public Status status() {
+        return status;
+    }
+
+    @Override
+    public String toString() {
+        return "Event{" + "action=" + action + ", status=" + status + '}';
+    }
+
     /**
      * The status of an action.
      */
@@ -41,34 +70,6 @@ public class Event {
      * An action performed by the synchronizer.
      */
     public static interface Action {
-    }
-
-    private final Action action;
-    private Status status;
-
-    Event(Action action) {
-        this.action = action;
-        this.status = Status.PLANNED;
-    }
-
-    /**
-     * Returns the action.
-     * @return the action
-     */
-    public Action getAction() {
-        return action;
-    }
-
-    /**
-     * Returns the status.
-     * @return the status
-     */
-    public Status getStatus() {
-        return status;
-    }
-
-    void setStatus(Status status) {
-        this.status = status;
     }
 
     /**

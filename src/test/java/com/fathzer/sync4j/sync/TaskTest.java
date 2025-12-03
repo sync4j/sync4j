@@ -49,8 +49,8 @@ class TaskTest {
         // Setup event listener
         SyncParameters parameters = new SyncParameters();
         parameters.eventListener(event -> {
-            assertEquals(action, event.getAction());
-            statuses.add(event.getStatus());
+            assertEquals(action, event.action());
+            statuses.add(event.status());
         });
         when(context.params()).thenReturn(parameters);
 

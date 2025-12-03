@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import com.fathzer.sync4j.Folder;
@@ -108,6 +109,17 @@ public class Synchronization implements AutoCloseable {
      */
     public void waitFor() throws InterruptedException {
         context.taskCounter().await();
+    }
+
+    /**
+     * Waits for the synchronization to finish.
+     * @param timeout the maximum time to wait
+     * @param unit the time unit
+     * @return true if the synchronization finished within the timeout, false otherwise
+     * @throws InterruptedException if the current thread is interrupted
+     */
+    public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+        return context.taskCounter().await(timeout, unit);
     }
 
     /**

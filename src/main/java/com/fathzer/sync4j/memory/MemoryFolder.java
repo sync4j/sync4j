@@ -205,4 +205,9 @@ class MemoryFolder extends MemoryEntry implements Folder {
     public boolean exists() {
         return exists.get();
     }
+
+    @Override
+    public String toString() {
+        return "MemoryFolder{" + path + '}';
+    }
 }

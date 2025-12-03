@@ -14,6 +14,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,6 +71,10 @@ class Context implements AutoCloseable {
 
         void await() throws InterruptedException {
             completionLatch.await();
+        }
+
+        boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+            return completionLatch.await(timeout, unit);
         }
     }
 
