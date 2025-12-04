@@ -19,7 +19,7 @@ import jakarta.annotation.Nullable;
 /**
  * In-memory implementation of a folder.
  */
-class MemoryFolder extends MemoryEntry implements Folder {
+public class MemoryFolder extends MemoryEntry implements Folder {
     private final AtomicBoolean exists;
     private Map<String, MemoryEntry> children;
 

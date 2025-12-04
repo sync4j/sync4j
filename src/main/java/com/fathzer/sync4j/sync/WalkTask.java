@@ -94,7 +94,7 @@ class WalkTask extends RecursiveAction {
         if (srcEntry.isFile()) {
             final File src = srcEntry.asFile();
             if (destinationEntry.isFile()) {
-                context.asyncCheckAndCopy(src, destinationFolder, destinationEntry.asFile());
+                context.asyncCheckAndCopy(src, destinationEntry.asFile());
             } else {
                 // Destination entry is a folder
                 context.deleteThenAsyncCopy(destinationEntry.asFolder(), destinationFolder, src);

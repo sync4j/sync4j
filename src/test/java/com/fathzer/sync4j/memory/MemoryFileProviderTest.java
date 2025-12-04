@@ -170,6 +170,7 @@ class MemoryFileProviderTest {
         entry.delete();
 
         // Then
+        assertFalse(root.list().stream().anyMatch(e -> e.getName().equals("test.txt")), "File should be in root.list() after deletion");
         Entry afterDelete = provider.get("/test.txt");
         assertFalse(afterDelete.exists(), "File should not exist after deletion");
 
@@ -184,6 +185,7 @@ class MemoryFileProviderTest {
 
     @Test
     void testDeleteFolder() throws IOException {
+        // Given
         MemoryFolder parent = (MemoryFolder) root.mkdir("parent");
         parent.createFile("file1.txt", "content1".getBytes(StandardCharsets.UTF_8));
         MemoryFolder subfolder = (MemoryFolder) parent.mkdir("subfolder");
@@ -191,10 +193,17 @@ class MemoryFileProviderTest {
 
         assertTrue(parent.exists());
 
+        // When
         parent.delete();
+
+        // Then
+        assertFalse(root.list().stream().anyMatch(e -> e.getName().equals("parent")), "Folder should be in root.list() after deletion");
+        assertFalse(subfolder.exists(), "Subfolder should not exist after parent deletion");
+        assertFalse(fileInSubfolder.exists(), "File in subfolder should not exist after parent deletion");
 
         Entry afterDelete = provider.get("/parent");
         assertFalse(afterDelete.exists(), "Folder should not exist after deletion");
+
 
         Entry childAfterDelete = provider.get("/parent/file1.txt");
         assertFalse(childAfterDelete.exists(), "Child file should not exist after parent deletion");
@@ -218,6 +227,9 @@ class MemoryFileProviderTest {
 
         // Check that folder can be deleted twice
         assertDoesNotThrow(parent::delete);
+
+        // That subfolder of a deleted folder can be deleted
+        assertDoesNotThrow(subfolder::delete);
     }
 
     @Test

@@ -58,9 +58,6 @@ abstract class MemoryEntry implements Entry {
 
     void deleteParentReference() throws IOException {
         provider.checkWriteOperationsAllowed();
-        if (!exists()) {
-            return;
-        }
         getParent().removeChild(getName(), this);
     }
 }
