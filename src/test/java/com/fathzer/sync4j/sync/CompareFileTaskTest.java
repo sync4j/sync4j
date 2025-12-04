@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ class CompareFileTaskTest {
     @Test
     void testConstructor() {
         // When
-        CompareFileTask task = new CompareFileTask(context, source, destination);
+        CompareFileTask task = new CompareFileTask(context, source, destination, null);
         
         // Then
         assertSame(context, task.context());
@@ -51,11 +52,11 @@ class CompareFileTaskTest {
         assertTrue(task.defaultValue());
 
         // Test null context
-        assertThrows(NullPointerException.class, () -> new CompareFileTask(null, source, destination));
+        assertThrows(NullPointerException.class, () -> new CompareFileTask(null, source, destination, null));
         
         // Test null File
-        assertThrows(NullPointerException.class, () -> new CompareFileTask(context, null, destination));
-        assertThrows(NullPointerException.class, () -> new CompareFileTask(context, source, null));
+        assertThrows(NullPointerException.class, () -> new CompareFileTask(context, null, destination, null));
+        assertThrows(NullPointerException.class, () -> new CompareFileTask(context, source, null, null));
     }
 
     @Test
@@ -63,7 +64,7 @@ class CompareFileTaskTest {
         // Given
         IOException expectedException = new IOException("compare failed");
         context.params().fileComparator( (f1,f2) -> {throw expectedException;});
-        CompareFileTask task = new CompareFileTask(context, source, destination);
+        CompareFileTask task = new CompareFileTask(context, source, destination, null);
         
         // When/Then
         IOException thrown = assertThrows(IOException.class, task::execute);
@@ -73,13 +74,22 @@ class CompareFileTaskTest {
     @Test
     void testExecute() throws IOException {
         // Given
-        context.params().fileComparator( (f1,f2) -> false);
-        CompareFileTask task = new CompareFileTask(context, source, destination);
+        AtomicBoolean extraActionCalled = new AtomicBoolean(false);
+        CompareFileTask task = new CompareFileTask(context, source, destination, () -> extraActionCalled.set(true));
 
-        // When
-        Boolean result = task.execute();
+
+        // When file are same
+        context.params().fileComparator( (f1,f2) -> true);
+        boolean result = task.execute();
+        // Then
+        assertTrue(result);
+        assertFalse(extraActionCalled.get());
         
+        // When file are different
+        context.params().fileComparator( (f1,f2) -> false);
+        result = task.execute();
         // Then
         assertFalse(result);
+        assertTrue(extraActionCalled.get());
     }
 }
