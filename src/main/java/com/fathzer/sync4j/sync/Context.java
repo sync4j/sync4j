@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import com.fathzer.sync4j.Entry;
@@ -54,15 +55,22 @@ class Context implements AutoCloseable {
     static class TaskCounter {
         private final AtomicLong pendingTasks = new AtomicLong(0);
         private final CountDownLatch completionLatch = new CountDownLatch(1);
+        private BiConsumer<TaskCounter, Boolean> eventConsumer = (tc, add) -> {};
 
         void increment() {
             pendingTasks.incrementAndGet();
+            eventConsumer.accept(this, true);
         }
 
         void decrement() {
             if (pendingTasks.decrementAndGet() == 0) {
                 completionLatch.countDown();
             }
+            eventConsumer.accept(this, false);
+        }
+
+        void setEventConsumer(BiConsumer<TaskCounter, Boolean> eventConsumer) {
+            this.eventConsumer = eventConsumer;
         }
 
         long getPendingTasks() {

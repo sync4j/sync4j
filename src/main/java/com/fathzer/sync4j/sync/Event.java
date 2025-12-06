@@ -10,6 +10,7 @@ import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.parameters.PerformanceParameters;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 /**
  * An event sent by the synchronizer.
@@ -51,19 +52,43 @@ public class Event {
         /**
          * The action is planned.
          */
-        PLANNED,
+        PLANNED(null),
         /**
          * The action is started.
          */
-        STARTED,
+        STARTED(PLANNED),
         /**
          * The action failed.
          */
-        FAILED,
+        FAILED(STARTED),
         /**
          * The action completed.
          */
-        COMPLETED
+        COMPLETED(STARTED);
+
+        private final Status previous;
+
+        Status(@Nullable Status previous) {
+            this.previous = previous;
+        }
+
+        /**
+         * Returns true if the status is terminal.
+         * <br>
+         * A terminal status is a status that cannot be changed (ie. COMPLETED or FAILED).
+         * @return true if the status is terminal
+         */
+        public boolean isTerminal() {
+            return this == COMPLETED || this == FAILED;
+        }
+
+        /**
+         * Returns this previous status (ie. the status that must be reached to reach this status).
+         * @return the previous status
+         */
+        public Status previous() {
+            return previous;
+        }
     }
 
     /**

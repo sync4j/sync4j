@@ -1,7 +1,6 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Event.CreateFolderAction;
@@ -19,7 +18,7 @@ class CreateFolderTask extends Task<Folder, CreateFolderAction> {
 
     @Override
     protected Folder defaultValue() throws IOException {
-        return new DryRunFolder(Paths.get(action().folder().getParentPath(), action().folder().getName(), action().name()));
+        return new DryRunFolder(action().folder(), action().name());
     }
 
     @Override

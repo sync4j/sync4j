@@ -17,7 +17,7 @@ class CreateFolderTaskTest {
     private Folder destinationFolder;
     
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() {
         // Create mocks
         context = mock(Context.class);
         statistics = new Statistics();
@@ -29,7 +29,6 @@ class CreateFolderTaskTest {
         when(context.params()).thenReturn(parameters);
 
         // Setup destination folder behavior
-        when(destinationFolder.getParentPath()).thenReturn("/test");
         when(destinationFolder.getName()).thenReturn("test");
     }
     
@@ -50,7 +49,6 @@ class CreateFolderTaskTest {
         // Verify default value
         Folder defaultValue = task.defaultValue();
         assertEquals(DryRunFolder.class, defaultValue.getClass());
-        assertEquals(destinationFolder.getParentPath()+"/"+destinationFolder.getName(), defaultValue.getParentPath());
         assertEquals("test", defaultValue.getName());
 
         // Test null context

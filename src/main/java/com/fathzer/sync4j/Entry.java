@@ -69,8 +69,10 @@ public interface Entry {
      * Returns the path of the parent of this entry.
      * @return the path of the parent of this entry, or null if this entry is the root.
      * @throws IOException if an I/O error occurs or if this entry does not exists and its parent exists and is a file
+     * @deprecated use getParent() instead
      */
     @Nullable
+    @Deprecated(forRemoval = true)
     String getParentPath() throws IOException;
 
     /**

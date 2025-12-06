@@ -1,7 +1,6 @@
 package com.fathzer.sync4j.sync;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.LongConsumer;
@@ -19,10 +18,12 @@ import jakarta.annotation.Nonnull;
  * {@link #mkdir(String)} throw an {@link UnsupportedOperationException}.
  */
 class DryRunFolder implements Folder {
-    private final Path path;
+    private final Folder parent;
+    private final String name;
 
-    DryRunFolder(@Nonnull Path path) {
-        this.path = Objects.requireNonNull(path);
+    DryRunFolder(@Nonnull Folder parent, @Nonnull String name) {
+        this.parent = Objects.requireNonNull(parent);
+        this.name = Objects.requireNonNull(name);
     }
 
     @Override
@@ -42,17 +43,18 @@ class DryRunFolder implements Folder {
 
     @Override
     public Folder getParent() {
+        return parent;
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public String getParentPath() throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getParentPath() {
-        final Path parent = path.getParent();
-        return parent==null ? null : parent.toString();    }
-
-    @Override
     public String getName() {
-        return path.getFileName().toString();
+        return name;
     }
 
     @Override
