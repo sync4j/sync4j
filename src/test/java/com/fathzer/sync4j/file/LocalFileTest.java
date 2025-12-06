@@ -67,15 +67,6 @@ class LocalFileTest {
     }
 
     @Test
-    void testGetParentPath() throws IOException {
-        String expected = tempDir.resolve("file.txt").toAbsolutePath().getParent().toString();
-        assertEquals(expected, file.getParentPath());
-
-        Entry root = getRoot();
-        assertEquals(null, root.getParentPath());
-    }
-
-    @Test
     void testGetProvider() throws IOException {
         Entry root = getRoot();
         assertSame(INSTANCE, root.getFileProvider());

@@ -30,9 +30,8 @@ abstract class MemoryEntry implements Entry {
         return path.substring(path.lastIndexOf('/') + 1);
     }
 
-    @Override
     @Nullable
-    public String getParentPath() throws IOException {
+    private String getParentPath() {
         if (MemoryFileProvider.ROOT_PATH.equals(path)) {
             return null;
         }

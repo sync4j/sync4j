@@ -47,12 +47,6 @@ class DryRunFolder implements Folder {
     }
 
     @Override
-    @Deprecated(forRemoval = true)
-    public String getParentPath() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String getName() {
         return name;
     }

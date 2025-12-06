@@ -64,12 +64,6 @@ class LocalFile implements File, Folder {
     }
     
     @Override
-    public String getParentPath() {
-        final Path parent = path.getParent();
-        return parent==null ? null : parent.toString();
-    }
-    
-    @Override
     public String getName() {
         final Path fileName = path.getFileName();
         return fileName == null ? "" : fileName.toString();

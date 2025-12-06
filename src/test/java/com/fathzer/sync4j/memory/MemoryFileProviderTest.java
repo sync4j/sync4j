@@ -34,7 +34,6 @@ class MemoryFileProviderTest {
         assertTrue(root.isFolder(), "Root should be a folder");
         assertFalse(root.isFile(), "Root should not be a file");
         assertEquals("", root.getName(), "Root should have no name");
-        assertNull(root.getParentPath(), "Root should have no parent path");
         assertNull(root.getParent(), "Root should have no parent");
     }
 
@@ -115,7 +114,6 @@ class MemoryFileProviderTest {
 
         Folder newFolder = parent.mkdir("child");
         assertEquals("child", newFolder.getName());
-        assertEquals("/parent", newFolder.getParentPath());
         assertSame(parent, newFolder.getParent());
         assertTrue(newFolder.exists());
 
@@ -243,17 +241,6 @@ class MemoryFileProviderTest {
         assertNotNull(entry);
         assertEquals("parent", entry.getName());
         assertTrue(entry.isFolder());
-    }
-
-    @Test
-    void testGetParentPath() throws IOException {
-        MemoryFolder parent = (MemoryFolder) root.mkdir("parent");
-        parent.createFile("file.txt", "content".getBytes(StandardCharsets.UTF_8));
-
-        Entry file = provider.get("/parent/file.txt");
-        String parentPath = file.getParentPath();
-
-        assertEquals("/parent", parentPath);
     }
 
     @Test
