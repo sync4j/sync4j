@@ -25,7 +25,7 @@ This makes it unusable in application development if you need to track progress 
 
 ## Requirements
 
-- Java 21
+- Java 17+
 
 ## Installation
 

@@ -11,8 +11,10 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <sonar.organization>sync4j</sonar.organization>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <!-- Default empty argLine for Surefire. JaCoCo will override this when active (see Magic incantation below) -->
+    <argLine></argLine>
   </properties>
 
   <dependencies>
