@@ -20,7 +20,7 @@ This makes it unusable in application development if you need to track progress 
 - Support for local files and folders included in this project (see [LocalProvider](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/file/LocalProvider.java))
 - Support for memory files and folders included in this project (see [MemoryFileProvider](https://github.com/fathzer/sync4j/blob/main/src/main/java/com/fathzer/sync4j/memory/MemoryFileProvider.java))
 - Support for remote files and folders:
-    Currently there's only one provider supported:
+    Currently there's only one remote provider supported:
     - [pCloud](https://www.pcloud.com/) -> [pCloudProvider](https://github.com/fathzer/sync4j-pcloud)
 
 ## Requirements
@@ -90,4 +90,3 @@ To implement your own provider, you should:
 
 An example of a non trivial provider is the [pCloudProvider](https://github.com/fathzer/sync4j-pcloud).
 
-It is highly recommended that root folder is a folder with no name (empty string) at an empty path. There's a notable exception to this rule: The LocalProvider where path depends on the system's file system, and usually an empty path denotes the working directory. 

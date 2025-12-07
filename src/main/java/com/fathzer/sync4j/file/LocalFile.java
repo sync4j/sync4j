@@ -37,11 +37,15 @@ class LocalFile implements File, Folder {
         this.provider = provider;
     }
 
+    private boolean isRoot() {
+        return path.equals(provider.rootPath);
+    }
+
     @Override
     public FileProvider getFileProvider() {
         return provider;
     }
-    
+
     @Override
     public boolean isFile() {
         return Files.isRegularFile(path);
@@ -59,14 +63,15 @@ class LocalFile implements File, Folder {
 
     @Override
     public Folder getParent() {
-        final Path parent = path.getParent();
-        return parent == null ? null : new LocalFile(parent, provider);
+        if (isRoot()) {
+            return null;
+        }
+        return new LocalFile(path.getParent(), provider);
     }
-    
+
     @Override
     public String getName() {
-        final Path fileName = path.getFileName();
-        return fileName == null ? "" : fileName.toString();
+        return isRoot() ? "" : path.getFileName().toString();
     }
 
     @Override
@@ -101,6 +106,9 @@ class LocalFile implements File, Folder {
     public void delete() throws IOException {
         provider.checkWriteable();
         if (isFolder()) {
+            if (isRoot()) {
+                throw new IOException("Cannot delete root folder");
+            }
             deletedFolder(path);
         } else if (exists()) {
             Files.delete(path);
@@ -117,7 +125,7 @@ class LocalFile implements File, Folder {
                 Files.delete(dir);
                 return FileVisitResult.CONTINUE;
             }
-            
+
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
@@ -136,18 +144,18 @@ class LocalFile implements File, Folder {
         provider.checkWriteable();
         checkFileName(fileName);
         Objects.requireNonNull(content, "Content cannot be null");
-        
+
         final Path targetPath = path.resolve(fileName);
-        
-        try (InputStream in = progressListener != null 
+
+        try (InputStream in = progressListener != null
                 ? new ProgressInputStream(content.getInputStream(), progressListener)
                 : content.getInputStream()) {
             Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
         }
-        
+
         // Copy file attributes
         Files.setLastModifiedTime(targetPath, FileTime.fromMillis(content.getLastModifiedTime()));
-        
+
         // Note: Setting creation time is platform dependent and may not work on all systems
         try {
             Files.setAttribute(targetPath, "creationTime", FileTime.fromMillis(content.getCreationTime()));
@@ -171,4 +179,3 @@ class LocalFile implements File, Folder {
         return "local:" + path.toAbsolutePath().toString() + (provider.isReadOnly() ? " (read-only)" : "");
     }
 }
-

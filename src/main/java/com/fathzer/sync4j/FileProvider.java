@@ -3,12 +3,31 @@ package com.fathzer.sync4j;
 import java.io.IOException;
 import java.util.List;
 
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
+
 import jakarta.annotation.Nonnull;
 
 /**
- * A provider of files.
-  */
+ * A minimalist provider of files.
+ * <br>A file provider is responsible for fetching files and folders from a remote or local storage.
+ * <br>Here is a list of the rules that must be respected by a file provider:
+ * <ul>
+ * <li>It exposes a strict tree of files and folders (no symlinks, no hard links, no junctions, only one root).</li>
+ * <li>It uses a standard path syntax with '/' as the path separator.</li>
+ * <li>File and folder names can't be empty, except for the root folder.</li>
+ * <li>The root folder can't be deleted.</li>
+ * <li>File and folder names can't contain '/' (depending on the provider, other characters may be forbidden).</li>
+ * <li>It should preferably be thread-safe. If it does not support concurrent operations, the {@link SyncParameters#performance()} must be configured to use prevent unsupported concurrent operations.
+ * <br>The {@link Entry} objects returned by the provider can be thread-safe or not.</li>
+ * </ul>
+*/
 public interface FileProvider extends AutoCloseable {
+    /**
+     * The root path.
+     * <br>Calling {@link #get(String)} with this path returns the root folder.
+     */
+    public static final String ROOT_PATH = "";
+
     /**
      * Returns the list of hash algorithms supported by this provider.
      * @return the list of hash algorithms supported by this provider ordered from best to worst.
