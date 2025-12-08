@@ -71,7 +71,10 @@ public final class GlobPatternMatcher implements Predicate<String> {
      * @return the equivalent regular expression
      * @throws PatternSyntaxException if the pattern is invalid
      */
+    @SuppressWarnings({"java:S6541","java:S3776","java:S135"})
     private static String toRegexPattern(String globPattern) {
+        // This method is a port of sun.nio.fs.Globs, with an adaptation to remove windows specific features
+        // This port is the reason for the SuppressWarnings annotations (I do not want to change too much the original code)
         boolean inGroup = false;
         StringBuilder regex = new StringBuilder("^");
 

@@ -6,23 +6,31 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 import com.fathzer.sync4j.file.LocalProvider;
 
 public abstract class AbstractFileProviderTest {
+    /** An annotation to declare the readonly support. */
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface NoReadOnlySupport {
+    }
+
     protected Folder root;
     protected Entry folder;
     protected Entry file;
     protected Entry nonExisting;
-    protected LocalProvider provider;
+    protected FileProvider provider;
 
     protected abstract FileProvider createFileProvider();
 
@@ -55,12 +63,21 @@ public abstract class AbstractFileProviderTest {
     }
 
     @Test
+    void testRoot() throws IOException {
+        assertTrue(root.exists(), "Root should exist");
+        assertTrue(root.isFolder(), "Root should be a folder");
+        assertFalse(root.isFile(), "Root should not be a file");
+        assertEquals("", root.getName(), "Root should have no name");
+        assertNull(root.getParent(), "Root should have no parent");
+    }
+
+    @Test
     void testGetParent() throws IOException {
-        assertNull(root.getParent());
         Entry parent = file.getParent();
         assertEquals("folder", parent.getName());
         parent = parent.getParent();
         assertEquals("", parent.getName());
+        // Now parent is root => no parent
         assertNull(parent.getParent());
 
         // Test no exception is thrown when parent is a regular file
@@ -68,21 +85,15 @@ public abstract class AbstractFileProviderTest {
     }
 
     @Test
-    void testGetProvider() throws IOException {
+    void testGetProvider() {
         assertSame(provider, root.getFileProvider());
         assertSame(provider, folder.getFileProvider());
         assertSame(provider, file.getFileProvider());
         assertSame(provider, nonExisting.getFileProvider());
     }
-
     
     @Test
-    void testIsFileAndSimilar() throws IOException {
-        assertTrue(root.exists());
-        assertTrue(root.isFolder());
-        assertFalse(root.isFile());
-        assertSame(root, root.asFolder());
-
+    void testIsFileAndSimilar() {
         assertTrue(file.exists());
         assertTrue(file.isFile());
         assertFalse(file.isFolder());
@@ -103,21 +114,22 @@ public abstract class AbstractFileProviderTest {
     }
 
     @Test
-    void testRootCantBeDeleted(@TempDir Path tempDir) throws IOException {
-        try (FileProvider provider = new LocalProvider(tempDir)) {
-            Entry root = provider.get(FileProvider.ROOT_PATH);
-            assertThrows(IOException.class, () -> root.delete());
-        }
+    void testRootCantBeDeleted() {
+        assertThrows(IOException.class, () -> root.delete());
     }
 
     /**
      * Test that the read-only mode is supported and works.
-     * <br>To exclude this test (typically if provider does not support read-only mode), override this method in the test super class.
+     * <br>By default, this test assumes that the provider supports read-only mode. Mark the test class with @NoReadOnlySupport if provider does not support read-only mode.
      */
     @Test
     protected void testReadOnly() throws IOException {
-        assertTrue(provider.isReadOnlySupported(), "MemoryFileProvider should support read-only mode");
+        boolean expectedReadOnlySupported = !this.getClass().isAnnotationPresent(NoReadOnlySupport.class);
+        assertEquals(expectedReadOnlySupported, provider.isReadOnlySupported());
         assertFalse(provider.isReadOnly(), "Provider should not be read-only by default");
+        if (!expectedReadOnlySupported) {
+            return;
+        }
         int initialSize = root.list().size();
 
         // Create a new file

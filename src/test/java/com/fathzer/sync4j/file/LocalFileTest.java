@@ -1,6 +1,8 @@
 package com.fathzer.sync4j.file;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,9 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 import com.fathzer.sync4j.AbstractFileProviderTest;
 import com.fathzer.sync4j.Entry;
@@ -117,8 +116,7 @@ class LocalFileTest extends AbstractFileProviderTest {
         final String tmpDirPath = "tmp";
 
         // Create a local Tree file (=> check mkdir)
-        Entry dummy = provider.get(tempDir.toString());
-        Folder tmpFolder = dummy.asFolder().mkdir(tmpDirPath);
+        Folder tmpFolder = root.mkdir(tmpDirPath);
         assertTrue(Files.exists(tempDir.resolve(tmpDirPath)));
         assertTrue(tmpFolder.exists());
 
@@ -126,7 +124,7 @@ class LocalFileTest extends AbstractFileProviderTest {
         assertTrue(subFolder.exists());
 
         // Check list
-        List<Entry> entries = provider.get(tempDir.toString()).asFolder().list();
+        List<Entry> entries = root.list();
         assertEquals(3, entries.size());
         entries.forEach(entry -> {
             if (file.getName().equals(entry.getName())) {

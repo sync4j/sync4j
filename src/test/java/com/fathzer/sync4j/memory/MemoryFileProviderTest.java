@@ -18,7 +18,6 @@ import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 
 class MemoryFileProviderTest {
-
     private MemoryFileProvider provider;
     private MemoryFolder root;
 
@@ -122,8 +121,7 @@ class MemoryFileProviderTest {
         assertTrue(retrieved.exists());
         assertTrue(retrieved.isFolder());
 
-        assertThrows(IOException.class, () -> parent.mkdir("child"),
-                "Should throw IOException when folder already exists");
+        assertThrows(IOException.class, () -> parent.mkdir("child"), "Should throw IOException when folder already exists");
     }
 
     @Test

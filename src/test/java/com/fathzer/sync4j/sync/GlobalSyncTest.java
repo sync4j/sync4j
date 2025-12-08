@@ -69,9 +69,14 @@ class GlobalSyncTest {
             closed.set(true);
         }
 
+        /** Intentional delay to simulate realistic task execution timing.
+         * This helps expose potential synchronization issues that might be hidden
+         * when mocked tasks execute too quickly.
+         */
+        @SuppressWarnings("java:S2925") // Intentional sleep for realistic test timing
         private void delay(long ms) {
             try {
-                Thread.sleep(ms);
+                TimeUnit.MILLISECONDS.sleep(ms);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
