@@ -50,6 +50,16 @@ class LocalFileTest extends AbstractFileProviderTest {
     private HashAlgorithm mockHashAlgorithm;
 
     @Test
+    void testIllegalArgumentExceptionInConstructor() throws IOException {
+        assertThrows(NullPointerException.class, () -> new LocalProvider(null));
+        final Path path = tempDir.resolve("nonExisting");
+        assertFalse(Files.exists(path));
+        assertThrows(IllegalArgumentException.class, () -> new LocalProvider(path));
+        Files.createFile(path);
+        assertThrows(IllegalArgumentException.class, () -> new LocalProvider(path));
+    }
+
+    @Test
     void testHashList() {
         assertEquals(Arrays.asList(HashAlgorithm.values()), provider.getSupportedHash());
     }

@@ -22,6 +22,11 @@ class EventTest {
 
         assertThrows(NullPointerException.class, () -> new Event(null, Event.Status.PLANNED));
         assertThrows(NullPointerException.class, () -> new Event(action, null));
+
+        assertFalse(Event.Status.PLANNED.isTerminal());
+        assertFalse(Event.Status.STARTED.isTerminal());
+        assertTrue(Event.Status.COMPLETED.isTerminal());
+        assertTrue(Event.Status.FAILED.isTerminal());
     }
 
     @Test

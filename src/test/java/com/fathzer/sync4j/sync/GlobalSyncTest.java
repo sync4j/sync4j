@@ -29,6 +29,7 @@ import com.fathzer.sync4j.sync.Context.TaskCounter;
 import com.fathzer.sync4j.sync.Event.Action;
 import com.fathzer.sync4j.sync.Event.Status;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
+import com.fathzer.sync4j.util.GlobPatternMatcher;
 import com.fathzer.sync4j.util.PrivateFields;
 
 class GlobalSyncTest {
@@ -215,6 +216,25 @@ class GlobalSyncTest {
             assertEquals(new Statistics.Counter(1, 0), synchronization.getStatistics().deletedFiles(), "Deleted files");
         }
         assertEquals(Set.of("dest-folder", "dest-file"), destination.list().stream().map(Entry::getName).collect(Collectors.toSet()), "Destination should remain unchanged but was " + destination.list());
+    }
+    
+    @Test
+    void testWithIgnore() throws Exception {
+        // Ignore all .txt files that ends with "e"
+        GlobPatternMatcher matcher = new GlobPatternMatcher("*e.txt", true);
+        parameters.filter(e -> !matcher.test(e.getName()));
+        
+        try (Synchronization synchronization = new Synchronization(source, destination, parameters)) {
+            list(source, "");
+            System.out.println("------------------");
+            execute(synchronization);
+            list(destination, "");
+            checkNoErrors(synchronization);
+            events.checkSuccessfull(true);
+            assertEquals(new Statistics.Counter(2, 2), synchronization.getStatistics().copiedFiles(), "Copied files");
+            assertEquals(new Statistics.Counter(27, 27), synchronization.getStatistics().copiedBytes(), "Copied bytes");
+            assertEquals(new Statistics.Counter(3, 3), synchronization.getStatistics().createdFolders(), "Created folders");
+        }
     }
     
     @Test
