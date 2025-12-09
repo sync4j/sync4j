@@ -225,10 +225,7 @@ class GlobalSyncTest {
         parameters.filter(e -> !matcher.test(e.getName()));
         
         try (Synchronization synchronization = new Synchronization(source, destination, parameters)) {
-            list(source, "");
-            System.out.println("------------------");
             execute(synchronization);
-            list(destination, "");
             checkNoErrors(synchronization);
             events.checkSuccessfull(true);
             assertEquals(new Statistics.Counter(2, 2), synchronization.getStatistics().copiedFiles(), "Copied files");

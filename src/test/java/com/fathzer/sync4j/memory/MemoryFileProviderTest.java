@@ -302,7 +302,7 @@ class MemoryFileProviderTest {
 
     @Test
     void testReadOnly() throws IOException {
-        assertTrue(provider.isReadOnlySupported(), "MemoryFileProvider should support read-only mode");
+        assertTrue(provider.isWriteSupported(), "MemoryFileProvider should support write operations");
         assertFalse(provider.isReadOnly(), "Provider should not be read-only by default");
 
         // Create a file

@@ -16,7 +16,7 @@ import com.fathzer.sync4j.HashAlgorithm;
  */
 public abstract class AbstractFileProvider implements FileProvider {
     private boolean readOnly;
-    private final boolean readOnlySupported;
+    private final boolean writeSupported;
     private final List<HashAlgorithm> supportedHashAlgorithms;
     private final boolean fastListSupported;
 
@@ -26,20 +26,20 @@ public abstract class AbstractFileProvider implements FileProvider {
      * The provider is initially created in read-write mode (not read-only).
      * </p>
      * 
-     * @param readOnlySupported whether this provider can operate in read-only mode
+     * @param writeSupported whether this provider supports write operations
      * @param supportedHashAlgorithms list of hash algorithms that this provider supports
      * @param fastListSupported whether this provider supports fast listing operations
      */
-    protected AbstractFileProvider(boolean readOnlySupported, List<HashAlgorithm> supportedHashAlgorithms, boolean fastListSupported) {
+    protected AbstractFileProvider(boolean writeSupported, List<HashAlgorithm> supportedHashAlgorithms, boolean fastListSupported) {
         this.readOnly = false;
-        this.readOnlySupported = readOnlySupported;
+        this.writeSupported = writeSupported;
         this.supportedHashAlgorithms = supportedHashAlgorithms;
         this.fastListSupported = fastListSupported;
     }
 
     @Override
-    public boolean isReadOnlySupported() {
-        return readOnlySupported;
+    public boolean isWriteSupported() {
+        return writeSupported;
     }
 
     @Override
@@ -49,6 +49,7 @@ public abstract class AbstractFileProvider implements FileProvider {
 
     @Override
     public void setReadOnly(boolean readOnly) {
+        FileProvider.super.setReadOnly(readOnly);
         this.readOnly = readOnly;
     }
 

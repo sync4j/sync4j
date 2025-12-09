@@ -36,14 +36,50 @@ class LocalFileTest extends AbstractFileProviderTest {
         return new LocalProvider(tempDir);
     }
 
-    @Override
-    protected void createFolder(String path) throws IOException {
-        Files.createDirectory(tempDir.resolve(path));
+    private class LocalFileSystem implements AbstractFileProviderTest.UnderlyingFileSystem {
+        private Path toPath(String path) {
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+            return tempDir.resolve(path);
+        }
+
+        @Override
+        public void createFolder(String path) throws IOException {
+            Files.createDirectory(toPath(path));
+        }
+
+        @Override
+        public void createFile(String path) throws IOException {
+            Files.createFile(toPath(path));
+        }
+
+        @Override
+        public void delete(String path) throws IOException {
+            Files.delete(toPath(path));
+        }
+
+        @Override
+        public void assertUnderlyingFileEquals(String path, File file) throws IOException {
+            Path filePath = toPath(path);
+            assertEquals(file.getSize(), Files.size(filePath));
+            try (var stream = file.getInputStream()) {
+                assertArrayEquals(Files.readAllBytes(filePath), stream.readAllBytes());
+            }
+            assertEquals(Files.getLastModifiedTime(filePath).toMillis(), file.getLastModifiedTime());
+            final FileTime attribute = (FileTime) Files.getAttribute(filePath, "creationTime");
+            assertEquals(attribute.toMillis(), file.getCreationTime());
+        }
+
+        @Override
+        public void assertUnderlyingFolderExist(String path) throws IOException {
+            assertTrue(Files.exists(toPath(path)));
+        }
     }
 
     @Override
-    protected void createFile(String path) throws IOException {
-        Files.createFile(tempDir.resolve(path));
+    protected UnderlyingFileSystem getUnderlyingFileSystem() {
+        return new LocalFileSystem();
     }
 
     @Mock
@@ -67,7 +103,7 @@ class LocalFileTest extends AbstractFileProviderTest {
     @Test
     void testGetHashCallsComputeHash() throws IOException {
         // Given
-        File localFile = (File) file;
+        File localFile = root.copy("file.txt", createMockFile("content"), null);
         String expectedHash = "test-hash";
         when(mockHashAlgorithm.computeHash(any(Path.class))).thenReturn(expectedHash);
 
@@ -82,7 +118,8 @@ class LocalFileTest extends AbstractFileProviderTest {
     @Test
     void testFilesBasedCalls() throws IOException {
         // Given
-        File localFile = file.asFile();
+        ufs.createFile("file.txt");
+        File localFile = provider.get("file.txt").asFile();
 
         try (var mockedFiles = mockStatic(Files.class);
             var inputStream = new ByteArrayInputStream("test content".getBytes())) {
@@ -135,14 +172,7 @@ class LocalFileTest extends AbstractFileProviderTest {
 
         // Check list
         List<Entry> entries = root.list();
-        assertEquals(3, entries.size());
-        entries.forEach(entry -> {
-            if (file.getName().equals(entry.getName())) {
-                assertTrue(entry.isFile());
-            } else {
-                assertTrue(entry.isFolder());
-            }
-        });
+        assertEquals(List.of("tmp"), entries.stream().map(Entry::getName).toList());
 
         // Copy a fake file in sub folder to a non existing file
         String content = "test content";

@@ -16,7 +16,7 @@ import jakarta.annotation.Nonnull;
  * <li>It uses a standard path syntax with '/' as the path separator.</li>
  * <li>File and folder names can't be empty, except for the root folder.</li>
  * <li>The root folder can't be deleted.</li>
- * <li>File and folder names can't contain '/' (depending on the provider, other characters may be forbidden).</li>
+ * <li>File and folder names can't contain '/' (depending on the provider, other characters may also be forbidden).</li>
  * <li>It should preferably be thread-safe. If it does not support concurrent operations, the {@link SyncParameters#performance()} must be configured to use prevent unsupported concurrent operations.
  * <br>The {@link Entry} objects returned by the provider can be thread-safe or not.</li>
  * </ul>
@@ -53,35 +53,33 @@ public interface FileProvider extends AutoCloseable {
 
     /**
      * Returns true if the provider supports read-only operations.
-     * <br>
-     * By default, this method returns false.
-     * 
+     * <br>By default, this method returns true.
      * @return a boolean
      */
-    default boolean isReadOnlySupported() {
-        return false;
+    default boolean isWriteSupported() {
+        return true;
     }
 
     /**
-     * Returns true if the provider is read-only.
-     * <br>
-     * By default, this method returns false.
-     * 
-     * @return a boolean
+     * Returns true if the provider is in read-only mode.
+     * <br>By default, this method returns true if the provider does not support write operations and false otherwise.
+     * @return true if this provider is in read-only mode, false otherwise
      */
     default boolean isReadOnly() {
-        return false;
+        return !this.isWriteSupported();
     }
 
     /**
      * Sets the provider to read-only mode.
      * <br>
-     * By default, this method throws an UnsupportedOperationException.
-     * 
-     * @param readOnly a boolean
+     * By default, this method throws an UnsupportedOperationException if the provider does not support write operations and the provider is <code>>readOnly</code> is true.
+     * It does nothing otherwise.
+     * @param readOnly true to set the provider to read-only mode, false otherwise
      */
     default void setReadOnly(boolean readOnly) {
-        throw new UnsupportedOperationException();
+        if (!isWriteSupported() && !readOnly) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /**

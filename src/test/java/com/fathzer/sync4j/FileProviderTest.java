@@ -1,6 +1,7 @@
 package com.fathzer.sync4j;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Answers.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -20,9 +21,15 @@ class FileProviderTest {
 
     @Test
     void testDefaultReadOnly() {
-        assertFalse(provider.isReadOnlySupported(), "Default implementation should not support read-only");
+        assertTrue(provider.isWriteSupported(), "Default implementation should support write operations");
         assertFalse(provider.isReadOnly(), "Default implementation should not be read-only");
-        assertThrows(UnsupportedOperationException.class, () -> provider.setReadOnly(true), "Default implementation should throw UnsupportedOperationException");
+        assertDoesNotThrow(() -> provider.setReadOnly(true), "Default implementation should not throw UnsupportedOperationException");
+        
+        FileProvider anotherProvider = mock(FileProvider.class, CALLS_REAL_METHODS);
+        when(anotherProvider.isWriteSupported()).thenReturn(false);
+        assertFalse(anotherProvider.isWriteSupported(), "Default implementation should not support write operations");
+        assertTrue(anotherProvider.isReadOnly(), "Default implementation should be read-only");
+        assertThrows(UnsupportedOperationException.class, () -> anotherProvider.setReadOnly(false), "Default implementation should throw UnsupportedOperationException");
     }
     
     @Test
@@ -62,7 +69,7 @@ class FileProviderTest {
             if (path == null) {
                 throw new NullPointerException("Path cannot be null");
             }
-            Entry entry = mock(Entry.class, withSettings().defaultAnswer(RETURNS_DEFAULTS));
+            Entry entry = mock(Entry.class, RETURNS_DEFAULTS);
             when(entry.getName()).thenReturn(path);
             when(entry.getFileProvider()).thenReturn(this);
             return entry;
