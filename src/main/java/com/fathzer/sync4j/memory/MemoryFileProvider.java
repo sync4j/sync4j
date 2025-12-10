@@ -37,11 +37,11 @@ public class MemoryFileProvider extends AbstractFileProvider {
         }
 
         // Split path into segments and navigate the tree
-        String[] segments = path.substring(1).split("/");
+        List<String> segments = checkPath(path);
         MemoryFolder currentFolder = root;
 
-        for (int i = 0; i < segments.length - 1; i++) {
-            MemoryEntry child = currentFolder.getChild(segments[i]);
+        for (int i = 0; i < segments.size() - 1; i++) {
+            MemoryEntry child = currentFolder.getChild(segments.get(i));
             if (child == null || !child.isFolder()) {
                 // A parent folder does not exist
                 return new MemoryFile(path, this, null, 0, 0);
@@ -50,7 +50,7 @@ public class MemoryFileProvider extends AbstractFileProvider {
         }
 
         // Get the final entry
-        String lastName = segments[segments.length - 1];
+        String lastName = segments.get(segments.size() - 1);
         MemoryEntry entry = currentFolder.getChild(lastName);
         return entry == null ? new MemoryFile(path, this, null, 0, 0) : entry;
     }

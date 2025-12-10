@@ -19,12 +19,12 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.fathzer.sync4j.AbstractFileProviderTest;
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
+import com.fathzer.sync4j.sync.test.AbstractFileProviderTest;
 
 @ExtendWith(MockitoExtension.class)
 class LocalFileTest extends AbstractFileProviderTest {
@@ -119,7 +119,7 @@ class LocalFileTest extends AbstractFileProviderTest {
     void testFilesBasedCalls() throws IOException {
         // Given
         ufs.createFile("file.txt");
-        File localFile = provider.get("file.txt").asFile();
+        File localFile = provider.get("/file.txt").asFile();
 
         try (var mockedFiles = mockStatic(Files.class);
             var inputStream = new ByteArrayInputStream("test content".getBytes())) {

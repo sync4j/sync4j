@@ -158,7 +158,7 @@ class Context implements AutoCloseable {
     }
 
     void asyncCheckAndCopy(File src, File destinationFile) {
-        executeAsync(new CompareFileTask(this, src, destinationFile, () -> asyncCopy(src, destinationFile.getParent())));
+        executeAsync(new CompareFileTask(this, src, destinationFile, () -> asyncCopy(src, destinationFile.getParent().asFolder())));
     }
 
     Folder createFolder(Folder destination, String name) {

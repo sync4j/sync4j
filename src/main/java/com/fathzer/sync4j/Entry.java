@@ -68,10 +68,13 @@ public interface Entry {
     /**
      * Returns the parent of this entry.
      * @return the parent of this entry, or null if this entry is the root.
-     * @throws IOException if an I/O error occurs or if this entry does not exists and its parent exists and is a file
+     * <br>Warning, there is no guarantee on the effective type of the returned entry:
+     * <br> - if this exists it is a folder.
+     * <br> - if this does not exist it is a folder, a non existing entry and even a file.
+     * @throws IOException if an I/O error occurs
      */
     @Nullable
-    Folder getParent() throws IOException;
+    Entry getParent() throws IOException;
     
     /**
      * Deletes this entry.

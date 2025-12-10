@@ -20,6 +20,13 @@ class FileProviderTest {
     }
 
     @Test
+    void testDefaultCheckPath() {
+        assertDoesNotThrow(() -> provider.checkPath("/test/path"), "Default implementation should not throw exception");
+        assertThrows(IllegalArgumentException.class, () -> provider.checkPath("/test//path"), "Should throw IllegalArgumentException for path with empty segment");
+        assertThrows(IllegalArgumentException.class, () -> provider.checkPath("test"), "Should throw IllegalArgumentException for path without root /");
+    }
+
+    @Test
     void testDefaultReadOnly() {
         assertTrue(provider.isWriteSupported(), "Default implementation should support write operations");
         assertFalse(provider.isReadOnly(), "Default implementation should not be read-only");
@@ -66,9 +73,7 @@ class FileProviderTest {
     private static class TestFileProvider implements FileProvider {
         @Override
         public Entry get(String path) throws IOException {
-            if (path == null) {
-                throw new NullPointerException("Path cannot be null");
-            }
+            this.checkPath(path);
             Entry entry = mock(Entry.class, RETURNS_DEFAULTS);
             when(entry.getName()).thenReturn(path);
             when(entry.getFileProvider()).thenReturn(this);

@@ -12,7 +12,6 @@ import com.fathzer.sync4j.helper.AbstractFileProvider;
 /**
  * A local file provider.
  */
-@SuppressWarnings("java:S6548")
 public class LocalProvider extends AbstractFileProvider {
     final Path rootPath;
 
@@ -30,6 +29,7 @@ public class LocalProvider extends AbstractFileProvider {
 
     @Override
     public Entry get(String path) throws IOException {
+        this.checkPath(path);
         if (path.startsWith("/")) {
             path = path.substring(1);
         }

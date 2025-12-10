@@ -41,12 +41,12 @@ abstract class MemoryEntry implements Entry {
 
     @Override
     @Nullable
-    public MemoryFolder getParent() throws IOException {
+    public Entry getParent() throws IOException {
         String parentPath = getParentPath();
         if (parentPath == null) {
             return null;
         }
-        return (MemoryFolder)provider.get(parentPath);
+        return provider.get(parentPath);
     }
 
     @Override
@@ -57,6 +57,6 @@ abstract class MemoryEntry implements Entry {
 
     void deleteParentReference() throws IOException {
         provider.checkWriteOperationsAllowed();
-        getParent().removeChild(getName(), this);
+        ((MemoryFolder)getParent()).removeChild(getName(), this);
     }
 }

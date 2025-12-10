@@ -1,7 +1,9 @@
 package com.fathzer.sync4j;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
@@ -85,13 +87,37 @@ public interface FileProvider extends AutoCloseable {
     /**
      * Returns the file or folder at the given path.
      * @param path the path of the file. <br>
-     * <b>Warning</b>: The path syntax is provider and/or platform dependent.
-     * It is the responsibility of the caller to provide a valid path for the provider and the platform.
-     * @return the file or folder, even if it does not exist (see {@link Entry#exists()})
+     * @return the entry, even if it does not exist (see {@link Entry#exists()}), even the path is inconsistent (Typicaly an entry that is inside ... a file).
      * @throws IOException if an I/O error occurs
+     * @throws IllegalArgumentException if the path is invalid (for instance it contains an empty file name or a character not allowed by the provider)
      */
     @Nonnull
     Entry get(@Nonnull String path) throws IOException;
+
+    /**
+     * Checks if the path is valid.
+     * <br>This method is a helper to validate the path before fetching the entry in {@link #get(String)}.
+     * <br>By default, this method throws an IllegalArgumentException if the path contains an empty file name.
+     * @param path the path to check
+     * @return the list of file names in the path (excluding the root folder)
+     * @throws IllegalArgumentException if the path is invalid
+     */
+    default List<String> checkPath(@Nonnull String path) throws IllegalArgumentException {
+        Objects.requireNonNull(path, "Path cannot be null");
+        if (ROOT_PATH.equals(path)) {
+            return List.of();
+        }
+        if (!path.startsWith("/")) {
+            throw new IllegalArgumentException("Path must start with '/'");
+        }
+        List<String> result = Arrays.stream(path.split("/")).skip(1).toList();
+        result.forEach(part -> {
+            if (part.isEmpty()) {
+                throw new IllegalArgumentException("Path cannot contain empty file names");
+            }
+        });
+        return result;
+    }
 
     /**
      * Closes this provider.
