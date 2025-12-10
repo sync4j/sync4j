@@ -1,8 +1,7 @@
-package com.fathzer.sync4j;
+package com.fathzer.sync4j.sync.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -19,10 +18,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.fathzer.sync4j.file.LocalProvider;
+import com.fathzer.sync4j.Entry;
+import com.fathzer.sync4j.File;
+import com.fathzer.sync4j.FileProvider;
+import com.fathzer.sync4j.Folder;
 
 public abstract class AbstractFileProviderTest {
-    /** An annotation to declare the readonly support. */
+    /** An annotation to declare there's no write support expected. */
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface NoWriteSupport {
@@ -94,7 +96,7 @@ public abstract class AbstractFileProviderTest {
 
     @BeforeEach
     protected void setup() throws IOException {
-        provider = (LocalProvider) createFileProvider();
+        provider = createFileProvider();
         root = provider.get(FileProvider.ROOT_PATH).asFolder();
         ufs = getUnderlyingFileSystem();
     }
@@ -106,12 +108,12 @@ public abstract class AbstractFileProviderTest {
 
     protected File createMockFile(String content) throws IOException {
         File result = Mockito.mock(File.class);
-        when(result.getInputStream()).thenReturn(new ByteArrayInputStream(content.getBytes()));
+        Mockito.lenient().when(result.getInputStream()).thenReturn(new ByteArrayInputStream(content.getBytes()));
         return result;
     }
 
     @Test
-    void testRoot() throws IOException {
+    protected void testRoot() throws IOException {
         assertTrue(root.exists(), "Root should exist");
         assertTrue(root.isFolder(), "Root should be a folder");
         assertFalse(root.isFile(), "Root should not be a file");
@@ -121,19 +123,43 @@ public abstract class AbstractFileProviderTest {
     }
 
     @Test
-    void testGetParent() throws IOException {
-        // Test no exception is thrown when parent is a regular file
+    protected void testGet() throws IOException {
+        assertThrows(IllegalArgumentException.class, () -> provider.get("/folder//file.txt"), "Invalid path should not be retrieved");
+        assertThrows(IllegalArgumentException.class, () -> provider.get("folder/file.txt"), "Invalid path should not be retrieved");
+        
+        // Check inconsistent path does not throw any exception and returns a non existing entry
+        root.copy("file.txt", createMockFile("content"), null);
+        Entry file = provider.get("/file.txt/toto.txt");
+        assertFalse(file.exists());
+    }
+
+    @Test
+    protected void testGetParent() throws IOException {
+    	// Check get parent on missing file does not throw IOException
         Entry file = provider.get("/folder/file.txt");
+        assertFalse(file.exists());
+        assertFalse(provider.get("/folder").exists());
+        assertDoesNotThrow(file::getParent, "Parent of a missing file should be retrieved");
+        
+        // Check get parent on existing file
+        root.mkdir("folder").copy("file.txt", createMockFile("content"), null);
+        file = provider.get("/folder/file.txt");
+        assertTrue(file.exists());
         Entry parent = file.getParent();
         assertEquals("folder", parent.getName());
         parent = parent.getParent();
         assertEquals("", parent.getName());
         // Now parent is root => no parent
         assertNull(parent.getParent());
+
+        // Check parent on missing entry with a file as parent
+        file = provider.get("/folder/file.txt/missing");
+        parent = file.getParent();
+        assertTrue(parent.isFile());
     }
 
     @Test
-    void testGetProvider() throws IOException {
+    protected void testGetProvider() throws IOException {
         assertSame(provider, root.getFileProvider());
         Folder folder = root.mkdir("folder");
         assertSame(provider, folder.getFileProvider());
@@ -171,7 +197,7 @@ public abstract class AbstractFileProviderTest {
         assertEquals(1, provider.get("/folder").asFolder().list().size());
 
         // Test non existing entry
-        assertFalse(provider.get("nonExisting").exists());
+        assertFalse(provider.get("/nonExisting").exists());
 
         // Test file deletion is reflected in entries returned by the provider
         ufs.delete("/file.txt");
@@ -190,7 +216,7 @@ public abstract class AbstractFileProviderTest {
         assumeTrue(ufs != null, "Test skipped because provider has no underlying filesystem");
 
 
-
+//fail("Not implemented");
         // TODO
     }
     
@@ -210,7 +236,7 @@ public abstract class AbstractFileProviderTest {
         assertSame(folder, folder.asFolder());
         assertThrows(IllegalStateException.class, folder::asFile);
 
-        Entry nonExisting = provider.get("nonExisting");
+        Entry nonExisting = provider.get("/nonExisting");
         assertFalse(nonExisting.exists());
         assertFalse(nonExisting.isFolder());
         assertFalse(nonExisting.isFile());
@@ -219,16 +245,15 @@ public abstract class AbstractFileProviderTest {
     }
 
     @Test
-    void testWriteSupported() {
-        assertEquals(!this.getClass().isAnnotationPresent(NoWriteSupport.class), provider.isWriteSupported());
+    protected void testWriteSupported() {
+        assertTrue(provider.isWriteSupported());
     }
 
     /**
-     * Test that the read-only mode is supported and works.
-     * <br>By default, this test assumes that the provider supports read-only mode. Mark the test class with @NoReadOnlySupport if provider does not support read-only mode.
+     * Test the read-only mode.
      */
     @Test
-    protected void testReadOnly() throws IOException {
+    protected void testReadOnlyMode() throws IOException {
         assertFalse(provider.isReadOnly(), "Provider should not be read-only by default");
         int initialSize = root.list().size();
 
@@ -237,18 +262,20 @@ public abstract class AbstractFileProviderTest {
 
         // When read-only is set
         provider.setReadOnly(true);
-
-        // All modifications should fail
-        assertThrows(IOException.class, testFile::delete);
-        assertThrows(IOException.class, () -> root.mkdir("subfolder"));
-        assertThrows(IOException.class, () -> root.copy("copy.txt", testFile, null));
-
+        assertEquals(initialSize + 1, root.list().size());
         // But file can be read and directory listed
         try (InputStream is = testFile.getInputStream()) {
             byte[] readContent = is.readAllBytes();
             assertEquals("content", new String(readContent, StandardCharsets.UTF_8));
         }
-        assertEquals(initialSize + 1, root.list().size());
+
+        // All modifications should fail
+        assertTrue(provider.isReadOnly(), "Provider should be read-only");
+        // All modifications should fail
+        assertThrows(IOException.class, () -> root.mkdir("subfolder"));
+        File mockedFile = createMockFile("content");
+        assertThrows(IOException.class, () -> root.copy("copy.txt", mockedFile, null));
+        assertThrows(IOException.class, testFile::delete);
 
         // When read-only is unset, all modifications should work
         provider.setReadOnly(false);
