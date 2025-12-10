@@ -11,7 +11,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.util.IOLambda.IOSupplier;
 
 public abstract class AbstractFileProviderTest {
     /** An annotation to declare there's no write support expected. */
@@ -86,7 +89,7 @@ public abstract class AbstractFileProviderTest {
      */
     protected UnderlyingFileSystem ufs;
 
-    protected abstract FileProvider createFileProvider();
+    protected abstract FileProvider createFileProvider() throws IOException;
 
     /**
      * Returns the underlying file system on which the file provider is based.
@@ -106,7 +109,7 @@ public abstract class AbstractFileProviderTest {
         root.getFileProvider().close();
     }
 
-    protected File createMockFile(String content) throws IOException {
+    protected static File createMockFile(String content) throws IOException {
         File result = Mockito.mock(File.class);
         Mockito.lenient().when(result.getInputStream()).thenReturn(new ByteArrayInputStream(content.getBytes()));
         return result;
@@ -124,15 +127,29 @@ public abstract class AbstractFileProviderTest {
 
     @Test
     protected void testGet() throws IOException {
+        testGet(() -> root.copy("file.txt", createMockFile("content"), null));
+    }
+    
+    void testGet(IOSupplier<File> fileSupplier) throws IOException {
         assertThrows(IllegalArgumentException.class, () -> provider.get("/folder//file.txt"), "Invalid path should not be retrieved");
         assertThrows(IllegalArgumentException.class, () -> provider.get("folder/file.txt"), "Invalid path should not be retrieved");
-        
-        // Check inconsistent path does not throw any exception and returns a non existing entry
-        root.copy("file.txt", createMockFile("content"), null);
-        Entry file = provider.get("/file.txt/toto.txt");
-        assertFalse(file.exists());
-    }
 
+        // Check inconsistent path does not throw any exception and returns a non existing entry
+        Entry file = fileSupplier.get();
+        Entry inconsistentPathFile = provider.get(toPath(file) + "/toto.txt");
+        assertFalse(inconsistentPathFile.exists());
+    }
+    
+    protected String toPath(Entry entry) throws IOException {
+        LinkedList<String> segments = new LinkedList<>();
+        Entry current = entry;
+        while (current != null) {
+            segments.addFirst(current.getName());
+            current = current.getParent();
+        }
+        return segments.stream().collect(Collectors.joining("/"));
+    }
+    
     @Test
     protected void testGetParent() throws IOException {
     	// Check get parent on missing file does not throw IOException

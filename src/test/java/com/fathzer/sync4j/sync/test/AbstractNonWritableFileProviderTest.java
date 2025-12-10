@@ -20,15 +20,9 @@ public abstract class AbstractNonWritableFileProviderTest extends AbstractFilePr
 
     @Override
     @Test
-    protected void testGet() {
-        assertThrows(IllegalArgumentException.class, () -> provider.get("/folder//file.txt"), "Invalid path should not be retrieved");
-        assertThrows(IllegalArgumentException.class, () -> provider.get("folder/file.txt"), "Invalid path should not be retrieved");
-        System.err.println("WARNING: testGet() is not implemented for inconsistent path is not implemented");
+    protected void testGet() throws IOException {
+        testGet(() -> searchFor(root, Entry::isFile, "file", "testGet() is not implemented for inconsistent path is not implemented").asFile());
     }
-
-
-
-
 
     @Override
     @Test

@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.sync.Event.CompareFileAction;
-import com.fathzer.sync4j.sync.IOLambda.IORunnable;
+import com.fathzer.sync4j.util.IOLambda.IORunnable;
 
 class CompareFileTask extends Task<Boolean, CompareFileAction> {
     private final IORunnable extraAction;
