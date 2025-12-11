@@ -1,13 +1,15 @@
 package com.fathzer.sync4j;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class EntryTest {
-    
     private Entry fileEntry;
     private Entry folderEntry;
     private Entry nonExistingEntry;
@@ -48,5 +50,25 @@ class EntryTest {
             "asFolder should throw IllegalStateException for files");
         assertThrows(IllegalStateException.class, () -> nonExistingEntry.asFolder(),
             "asFolder should throw IllegalStateException for non-existing entries");
+    }
+    
+    @Test
+    void testGetPath() throws IOException {
+        // Start building a file entry
+        Entry root = Mockito.mock(Folder.class, Mockito.CALLS_REAL_METHODS);
+        when(root.getName()).thenReturn("");
+        when(root.getParent()).thenReturn(null);
+
+        Entry aFolder = Mockito.mock(Folder.class, Mockito.CALLS_REAL_METHODS);
+        when(aFolder.getName()).thenReturn("folder");
+        when(aFolder.getParent()).thenReturn(root);
+        
+        Entry aFile = Mockito.mock(File.class, Mockito.CALLS_REAL_METHODS);
+        when(aFile.getName()).thenReturn("file.txt");
+        when(aFile.getParent()).thenReturn(aFolder);
+
+        assertEquals(FileProvider.ROOT_PATH, root.getPath(), "Root entry should have path /");
+        assertEquals("/folder", aFolder.getPath(), "Folder entry should have path /folder");
+        assertEquals("/folder/file.txt", aFile.getPath(), "File entry should have path /folder/file.txt");
     }
 }

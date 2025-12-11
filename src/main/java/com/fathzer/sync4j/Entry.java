@@ -1,6 +1,8 @@
 package com.fathzer.sync4j;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -75,6 +77,21 @@ public interface Entry {
      */
     @Nullable
     Entry getParent() throws IOException;
+
+    /**
+     * Returns the path of this entry.
+     * @return the full path (relative to the root, including the entry name) of this entry
+     */
+    @Nonnull
+    default String getPath() throws IOException {
+        LinkedList<String> segments = new LinkedList<>();
+        Entry current = this;
+        while (current != null) {
+            segments.addFirst(current.getName());
+            current = current.getParent();
+        }
+        return segments.stream().collect(Collectors.joining("/"));
+    }
     
     /**
      * Deletes this entry.
