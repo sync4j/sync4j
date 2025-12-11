@@ -61,12 +61,7 @@ class FileProviderTest {
         Entry entry = provider.get("/test/path");
         assertNotNull(entry, "get should return non-null entry");
         assertEquals("/test/path", entry.getName(), "Entry should have correct name");
-    }
-    
-    @Test
-    void testGetWithNullPath() {
-        assertThrows(NullPointerException.class, () -> provider.get(null),
-            "Should throw NullPointerException for null path");
+        assertThrows(NullPointerException.class, () -> provider.get(null), "Should throw NullPointerException for null path");
     }
     
     // Mock implementation for testing

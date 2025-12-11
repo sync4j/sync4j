@@ -1,4 +1,4 @@
-package com.fathzer.sync4j.sync.test;
+package com.fathzer.sync4j.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -11,9 +11,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +22,6 @@ import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
-import com.fathzer.sync4j.util.IOLambda.IOSupplier;
 
 public abstract class AbstractFileProviderTest {
     /** An annotation to declare there's no write support expected. */
@@ -115,6 +112,32 @@ public abstract class AbstractFileProviderTest {
         return result;
     }
 
+    protected Folder getAFolder() throws IOException {
+        Entry entry = provider.get("/folder");
+        if (entry.isFolder()) {
+            return entry.asFolder();
+        }
+        return root.mkdir("folder");
+    }
+
+    protected File getAFile() throws IOException {
+        Entry entry = provider.get("/folder/file.txt");
+        if (entry.isFile()) {
+            return entry.asFile();
+        }
+        return getAFolder().copy("file.txt", createMockFile("content"), null);
+    }
+
+    Entry getMissingEntry(String prefix) throws IOException {
+        for (int i = 0; i < 100; i++) {
+            Entry entry = provider.get(prefix + "/missing" + i);
+            if (!entry.exists()) {
+                return entry;
+            }
+        }
+        throw new IOException("Not able to find a missing entry named /" + prefix + "/missingX where X is a < 100");
+    }
+
     @Test
     protected void testRoot() throws IOException {
         assertTrue(root.exists(), "Root should exist");
@@ -127,50 +150,32 @@ public abstract class AbstractFileProviderTest {
 
     @Test
     protected void testGet() throws IOException {
-        testGet(() -> root.copy("file.txt", createMockFile("content"), null));
-    }
-    
-    void testGet(IOSupplier<File> fileSupplier) throws IOException {
         assertThrows(IllegalArgumentException.class, () -> provider.get("/folder//file.txt"), "Invalid path should not be retrieved");
         assertThrows(IllegalArgumentException.class, () -> provider.get("folder/file.txt"), "Invalid path should not be retrieved");
 
         // Check inconsistent path does not throw any exception and returns a non existing entry
-        Entry file = fileSupplier.get();
-        Entry inconsistentPathFile = provider.get(toPath(file) + "/toto.txt");
+        Entry file = getAFile();
+        Entry inconsistentPathFile = provider.get(file.getPath() + "/toto.txt");
         assertFalse(inconsistentPathFile.exists());
     }
-    
-    protected String toPath(Entry entry) throws IOException {
-        LinkedList<String> segments = new LinkedList<>();
-        Entry current = entry;
-        while (current != null) {
-            segments.addFirst(current.getName());
-            current = current.getParent();
-        }
-        return segments.stream().collect(Collectors.joining("/"));
-    }
+
     
     @Test
     protected void testGetParent() throws IOException {
-    	// Check get parent on missing file does not throw IOException
-        Entry file = provider.get("/folder/file.txt");
-        assertFalse(file.exists());
-        assertFalse(provider.get("/folder").exists());
+        // Check get parent on missing file does not throw IOException
+        Entry missingFolder = getMissingEntry("");
+        assertFalse(missingFolder.exists());
+        Entry file = provider.get(missingFolder.getPath() + "/file.txt");
         assertDoesNotThrow(file::getParent, "Parent of a missing file should be retrieved");
         
         // Check get parent on existing file
-        root.mkdir("folder").copy("file.txt", createMockFile("content"), null);
-        file = provider.get("/folder/file.txt");
+        file = getAFile();
         assertTrue(file.exists());
         Entry parent = file.getParent();
-        assertEquals("folder", parent.getName());
-        parent = parent.getParent();
-        assertEquals("", parent.getName());
-        // Now parent is root => no parent
-        assertNull(parent.getParent());
+        assertEquals(parent.getPath() + "/" + file.getName(), file.getPath());
 
         // Check parent on missing entry with a file as parent
-        file = provider.get("/folder/file.txt/missing");
+        file = getMissingEntry(file.getPath());
         parent = file.getParent();
         assertTrue(parent.isFile());
     }
@@ -178,9 +183,9 @@ public abstract class AbstractFileProviderTest {
     @Test
     protected void testGetProvider() throws IOException {
         assertSame(provider, root.getFileProvider());
-        Folder folder = root.mkdir("folder");
+        Folder folder = getAFolder();
         assertSame(provider, folder.getFileProvider());
-        File file = folder.copy("file.txt", createMockFile("content"), null);
+        File file = getAFile();
         assertSame(provider, file.getFileProvider());
     }
 
@@ -195,41 +200,36 @@ public abstract class AbstractFileProviderTest {
         assumeTrue(ufs != null, "Test skipped because provider has no underlying filesystem");
 
         // Test folder creation is reflected in entries returned by the provider
-        ufs.createFolder("/folder");
-        Folder folder = provider.get("/folder").asFolder();
+        ufs.createFolder("/new-folder");
+        Folder folder = provider.get("/new-folder").asFolder();
         assertTrue(folder.exists());
         assertTrue(folder.list().isEmpty());
-        assertEquals(List.of("folder"), provider.get(FileProvider.ROOT_PATH).asFolder().list().stream().map(Entry::getName).toList());
+        assertTrue(provider.get(FileProvider.ROOT_PATH).asFolder().list().stream().map(Entry::getName).toList().contains("new-folder"));
 
         // Test file creation is reflected in entries returned by the provider
-        ufs.createFile("/file.txt");
-        File file = provider.get("/file.txt").asFile();
+        ufs.createFile("/new-folder/file.txt");
+        File file = provider.get("/new-folder/file.txt").asFile();
         assertTrue(file.exists());
-        ufs.assertUnderlyingFileEquals("file.txt", file);
-        assertEquals(2, provider.get(FileProvider.ROOT_PATH).asFolder().list().size());
-
-        ufs.createFile("/folder/file.txt");
-        file = provider.get("/folder/file.txt").asFile();
-        ufs.assertUnderlyingFileEquals("folder/file.txt", file);
-        assertEquals(1, provider.get("/folder").asFolder().list().size());
+        ufs.assertUnderlyingFileEquals("/new-folder/file.txt", file);
+        assertEquals(List.of("file.txt"), provider.get("/new-folder").asFolder().list().stream().map(Entry::getName).toList());
 
         // Test non existing entry
         assertFalse(provider.get("/nonExisting").exists());
 
         // Test file deletion is reflected in entries returned by the provider
-        ufs.delete("/file.txt");
-        assertFalse(provider.get("/file.txt").exists());
-        assertEquals(1, provider.get(FileProvider.ROOT_PATH).asFolder().list().size());
+        ufs.delete("/new-folder/file.txt");
+        assertFalse(provider.get("/new-folder/file.txt").exists());
+        assertEquals(List.of(), provider.get("/new-folder").asFolder().list().stream().map(Entry::getName).toList());
 
         // Test folder deletion is reflected in entries returned by the provider
-        ufs.delete("/folder/file.txt");
-        ufs.delete("/folder");
-        assertFalse(provider.get("/folder").exists());
-        assertEquals(0, provider.get(FileProvider.ROOT_PATH).asFolder().list().size());
+        ufs.delete("/new-folder");
+        assertFalse(provider.get("/new-folder").exists());
+        assertFalse(provider.get(FileProvider.ROOT_PATH).asFolder().list().stream().map(Entry::getName).toList().contains("new-folder"));
     }
 
     @Test
     void testChangesUnderlyingFileSystem() throws IOException {
+        assumeTrue(provider.isWriteSupported(), "Test skipped because provider doesn't support write");
         assumeTrue(ufs != null, "Test skipped because provider has no underlying filesystem");
 
 
@@ -238,22 +238,22 @@ public abstract class AbstractFileProviderTest {
     }
     
     @Test
-    void testIsFileAndSimilar() throws IOException {
-        File file = root.copy("file.txt", createMockFile("content"), null);
+    protected void testIsFileAndSimilar() throws IOException {
+        File file = getAFile();
         assertTrue(file.exists());
         assertTrue(file.isFile());
         assertFalse(file.isFolder());
         assertSame(file, file.asFile());
         assertThrows(IllegalStateException.class, file::asFolder);
 
-        Folder folder = root.mkdir("folder");
+        Folder folder = getAFolder();
         assertTrue(folder.exists());
         assertTrue(folder.isFolder());
         assertFalse(folder.isFile());
         assertSame(folder, folder.asFolder());
         assertThrows(IllegalStateException.class, folder::asFile);
 
-        Entry nonExisting = provider.get("/nonExisting");
+        Entry nonExisting = getMissingEntry("");
         assertFalse(nonExisting.exists());
         assertFalse(nonExisting.isFolder());
         assertFalse(nonExisting.isFile());

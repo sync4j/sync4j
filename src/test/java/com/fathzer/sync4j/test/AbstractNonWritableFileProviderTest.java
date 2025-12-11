@@ -1,4 +1,4 @@
-package com.fathzer.sync4j.sync.test;
+package com.fathzer.sync4j.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,16 +12,14 @@ import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
 
 public abstract class AbstractNonWritableFileProviderTest extends AbstractFileProviderTest {
-
     @Override
-    protected UnderlyingFileSystem getUnderlyingFileSystem() {
-        return null;
+    protected Folder getAFolder() throws IOException {
+        return searchFor(root, Entry::isFolder, "folder", "Unable to find a folder to perform tests").asFolder();
     }
 
     @Override
-    @Test
-    protected void testGet() throws IOException {
-        testGet(() -> searchFor(root, Entry::isFile, "file", "testGet() is not implemented for inconsistent path is not implemented").asFile());
+    protected File getAFile() throws IOException {
+        return searchFor(root, Entry::isFile, "file", "Unable to find a file to perform tests").asFile();
     }
 
     @Override

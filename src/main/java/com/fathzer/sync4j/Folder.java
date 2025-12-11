@@ -65,7 +65,7 @@ public interface Folder extends Entry {
      */
     default void checkFileName(@Nonnull String fileName) {
         if (fileName.trim().isEmpty() || fileName.contains("/")) {
-            throw new IllegalArgumentException("File name cannot be empty or contain path separator");
+            throw new IllegalArgumentException("File name (" + fileName + ") cannot be empty or contain path separator");
         }
     }
 }

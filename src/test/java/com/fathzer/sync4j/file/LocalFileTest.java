@@ -24,7 +24,7 @@ import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
-import com.fathzer.sync4j.sync.test.AbstractFileProviderTest;
+import com.fathzer.sync4j.test.AbstractFileProviderTest;
 
 @ExtendWith(MockitoExtension.class)
 class LocalFileTest extends AbstractFileProviderTest {
