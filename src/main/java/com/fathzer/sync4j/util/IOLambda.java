@@ -8,19 +8,30 @@ import java.io.IOException;
 public final class IOLambda {
     private IOLambda() {}
     
-    @FunctionalInterface
     /**
      * Runnable that throws IOException.
      */
+    @FunctionalInterface
     public interface IORunnable {
+        /**
+         * Runs the runnable.
+         * @throws IOException if an I/O error occurs
+         */
         void run() throws IOException;
     }
 
-    @FunctionalInterface
     /**
      * Supplier that throws IOException.
+     * 
+     * @param <T> the type of the result
      */
+    @FunctionalInterface
     public interface IOSupplier<T> {
+        /**
+         * Gets the result.
+         * @return the result
+         * @throws IOException if an I/O error occurs
+         */
         T get() throws IOException;
     }
 }

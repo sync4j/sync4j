@@ -81,6 +81,7 @@ public interface Entry {
     /**
      * Returns the path of this entry.
      * @return the full path (relative to the root, including the entry name) of this entry
+     * @throws IOException if an I/O error occurs
      */
     @Nonnull
     default String getPath() throws IOException {
