@@ -28,6 +28,8 @@ import com.fathzer.sync4j.test.AbstractFileProviderTest;
 
 @ExtendWith(MockitoExtension.class)
 class LocalFileTest extends AbstractFileProviderTest {
+    private static final String CREATION_TIME = "creationTime";
+
     @TempDir
     private Path tempDir;
 
@@ -37,7 +39,7 @@ class LocalFileTest extends AbstractFileProviderTest {
     }
 
     private class LocalFileSystem implements AbstractFileProviderTest.UnderlyingFileSystem {
-        private Path toPath(String path) {
+		private Path toPath(String path) {
             if (path.startsWith("/")) {
                 path = path.substring(1);
             }
@@ -67,7 +69,7 @@ class LocalFileTest extends AbstractFileProviderTest {
                 assertArrayEquals(Files.readAllBytes(filePath), stream.readAllBytes());
             }
             assertEquals(Files.getLastModifiedTime(filePath).toMillis(), file.getLastModifiedTime());
-            final FileTime attribute = (FileTime) Files.getAttribute(filePath, "creationTime");
+            final FileTime attribute = (FileTime) Files.getAttribute(filePath, CREATION_TIME);
             assertEquals(attribute.toMillis(), file.getCreationTime());
         }
 
@@ -80,6 +82,22 @@ class LocalFileTest extends AbstractFileProviderTest {
     @Override
     protected UnderlyingFileSystem getUnderlyingFileSystem() {
         return new LocalFileSystem();
+    }
+
+    @Override
+    protected boolean isCreationTimeImmutable() throws IOException {
+        Path path = tempDir.resolve("creationTimeTest");
+        if (Files.exists(path)) {
+            throw new IllegalStateException("Unable to check creation time support without side effect: File " + path + " already exists");
+        }
+        try {
+            Files.createFile(path);
+            FileTime creationTime = FileTime.fromMillis(123456789);
+            Files.setAttribute(path, CREATION_TIME, creationTime);
+            return !Files.getAttribute(path, CREATION_TIME).equals(creationTime);
+        } finally {
+            Files.delete(path);
+        }
     }
 
     @Mock

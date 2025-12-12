@@ -11,6 +11,9 @@ import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.Folder;
 
+/** A try to create a common test for non-writable file providers.
+ * @see AbstractNonWritableFileProviderTest
+*/
 public abstract class AbstractNonWritableFileProviderTest extends AbstractFileProviderTest {
     @Override
     protected Folder getAFolder() throws IOException {
@@ -26,6 +29,21 @@ public abstract class AbstractNonWritableFileProviderTest extends AbstractFilePr
     @Test
     protected void testWriteSupported() {
         assertFalse(provider.isWriteSupported());
+    }
+
+    @Override
+    @Test
+    protected void testFolderList() throws IOException {
+        Folder folder = getAFolder();
+        assertTrue(parentListContains(folder, folder.getName()));
+        File file = getAFile();
+        assertTrue(parentListContains(file, file.getName()));
+        Entry missing = getMissingEntry(folder.getPath());
+        assertFalse(parentListContains(missing, missing.getName()));
+    }
+    
+    private boolean parentListContains(Entry entry, String name) throws IOException {
+        return ((Folder)entry.getParent()).list().stream().map(Entry::getName).anyMatch(n->n.equals(name));
     }
 
     @Override

@@ -12,6 +12,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,9 @@ import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 
+/** A try to create a common test for file providers (except for non-writable providers).
+ * @see AbstractNonWritableFileProviderTest
+*/
 public abstract class AbstractFileProviderTest {
     /** An annotation to declare there's no write support expected. */
     @Target(ElementType.TYPE)
@@ -112,6 +116,10 @@ public abstract class AbstractFileProviderTest {
         return result;
     }
 
+    protected boolean isCreationTimeImmutable() throws IOException {
+        return false;
+    }
+
     protected Folder getAFolder() throws IOException {
         Entry entry = provider.get("/folder");
         if (entry.isFolder()) {
@@ -128,7 +136,7 @@ public abstract class AbstractFileProviderTest {
         return getAFolder().copy("file.txt", createMockFile("content"), null);
     }
 
-    Entry getMissingEntry(String prefix) throws IOException {
+    protected Entry getMissingEntry(String prefix) throws IOException {
         for (int i = 0; i < 100; i++) {
             Entry entry = provider.get(prefix + "/missing" + i);
             if (!entry.exists()) {
@@ -150,8 +158,8 @@ public abstract class AbstractFileProviderTest {
 
     @Test
     protected void testGet() throws IOException {
-        assertThrows(IllegalArgumentException.class, () -> provider.get("/folder//file.txt"), "Invalid path should not be retrieved");
-        assertThrows(IllegalArgumentException.class, () -> provider.get("folder/file.txt"), "Invalid path should not be retrieved");
+        assertThrows(IllegalArgumentException.class, () -> provider.get("/folder//file.txt"), "Invalid path (double slash) should not be retrieved");
+        assertThrows(IllegalArgumentException.class, () -> provider.get("folder/file.txt"), "Invalid path (no leading slash) should not be retrieved");
 
         // Check inconsistent path does not throw any exception and returns a non existing entry
         Entry file = getAFile();
@@ -159,7 +167,6 @@ public abstract class AbstractFileProviderTest {
         assertFalse(inconsistentPathFile.exists());
     }
 
-    
     @Test
     protected void testGetParent() throws IOException {
         // Check get parent on missing file does not throw IOException
@@ -187,6 +194,175 @@ public abstract class AbstractFileProviderTest {
         assertSame(provider, folder.getFileProvider());
         File file = getAFile();
         assertSame(provider, file.getFileProvider());
+        Entry entry = getMissingEntry("/folder");
+        assertSame(provider, entry.getFileProvider());
+    }
+
+    @Test
+    protected void testAsFileAndAsFolder() throws IOException {
+        File file = getAFile();
+        assertDoesNotThrow(file::asFile);
+        assertThrows(IllegalStateException.class, file::asFolder);
+
+        Folder folder = getAFolder();
+        assertDoesNotThrow(folder::asFolder);
+        assertThrows(IllegalStateException.class, folder::asFile);
+
+        Entry entry = getMissingEntry("");
+        assertThrows(IllegalStateException.class, entry::asFile);
+        assertThrows(IllegalStateException.class, entry::asFolder);
+    }
+
+    @Test
+    protected void testFolderList() throws IOException {
+        Folder parent = root.mkdir(getMissingEntry(FileProvider.ROOT_PATH).getName());
+        try {
+            parent.copy("file1.txt", createMockFile("content1"), null);
+            parent.copy("file2.txt", createMockFile("content2"), null);
+            parent.mkdir("subfolder");
+
+            Entry entry = provider.get(parent.getPath());
+            Folder folder = entry.asFolder();
+            List<Entry> children = folder.list();
+
+            assertEquals(3, children.size(), "Should have 3 children");
+        } finally {
+            parent.delete();
+        }
+    }
+
+    @Test
+    protected void testFolderMkdir() throws IOException {
+        assumeTrue(provider.isWriteSupported(), "Test skipped because provider is not writable");
+        Folder parent = root.mkdir(getMissingEntry(FileProvider.ROOT_PATH).getName());
+        try {
+            Folder newFolder = parent.mkdir("child");
+            assertEquals("child", newFolder.getName());
+            assertTrue(newFolder.exists());
+            assertTrue(newFolder.isFolder());
+
+            // Verify the folder is created in the file provider
+            Entry retrieved = provider.get(parent.getPath() + "/child");
+            assertTrue(retrieved.exists());
+            assertTrue(retrieved.isFolder());
+
+            assertThrows(IOException.class, () -> parent.mkdir("child"), "Should throw IOException when folder already exists");
+
+            // Check what happens if there is a file with the same name
+            parent.copy("child.txt", createMockFile("content"), null);
+            assertThrows(IOException.class, () -> parent.mkdir("child"), "Should throw IOException when a file with the same name exists");
+            
+            // Check illegal file names
+            assertThrows(IllegalArgumentException.class, () -> parent.mkdir(""), "Should throw for empty name");
+            assertThrows(IllegalArgumentException.class, () -> parent.mkdir("name/with/slash"), "Should throw for name with slash");
+        } finally {
+            parent.delete();
+        }
+    }
+    
+    @Test
+    protected void testFolderCopy() throws IOException {
+        assumeTrue(provider.isWriteSupported(), "Test skipped because provider is not writable");
+        Folder dest = root.mkdir(getMissingEntry(FileProvider.ROOT_PATH).getName());
+        try {
+            String content = "test content";
+            File sourceFile = createMockFile(content);
+            Mockito.when(sourceFile.getCreationTime()).thenReturn(123456789L);
+            Mockito.when(sourceFile.getLastModifiedTime()).thenReturn(167654321L);
+
+            File copiedFile = dest.copy("copied.txt", sourceFile, null);
+            assertEquals("copied.txt", copiedFile.getName());
+            if (!isCreationTimeImmutable()) {
+                assertEquals(sourceFile.getCreationTime(), copiedFile.getCreationTime());
+            }
+            assertEquals(sourceFile.getLastModifiedTime(), copiedFile.getLastModifiedTime());
+
+            // Verify content
+            try (InputStream is = copiedFile.getInputStream()) {
+                byte[] readContent = is.readAllBytes();
+                assertArrayEquals(content.getBytes(), readContent, "Copied content should match");
+            }
+
+            // Check progress listener + copying to an existing file
+            AtomicLong progress = new AtomicLong();
+            dest.copy("copied.txt", sourceFile, progress::set);
+            assertEquals(sourceFile.getSize(), progress.get(), "Progress should match copied content size");
+
+            // Check copying from a missing file
+            File missingFile = createMockFile(content);
+            Mockito.lenient().when(missingFile.getInputStream()).thenThrow(new IOException("Missing file"));
+            assertThrows(IOException.class, () -> dest.copy("copied.txt", missingFile, null), "Should throw IOException when file does not exist");
+            
+            // Check illegal file names
+            assertThrows(IllegalArgumentException.class, () -> dest.copy("", sourceFile, null), "Should throw for empty name");
+            assertThrows(IllegalArgumentException.class, () -> dest.copy("name/with/slash", sourceFile, null), "Should throw for name with slash");
+        } finally {
+            dest.delete();
+        }
+    }
+    
+    @Test
+    protected void testDeleteFile() throws IOException {
+        assumeTrue(provider.isWriteSupported(), "Test skipped because provider is not writable");
+        File entry = root.copy("test.txt", createMockFile("content"), null);
+        try {
+            assertTrue(entry.exists());
+
+            // When
+            entry.delete();
+
+            // Then
+            assertFalse(root.list().stream().anyMatch(e -> e.getName().equals("test.txt")), "File should be in root.list() after deletion");
+            Entry afterDelete = provider.get("/test.txt");
+            assertFalse(afterDelete.exists(), "File should not exist after deletion");
+        } finally {
+            entry.delete();
+        }
+    }
+
+    @Test
+    protected void testDeleteFolder() throws IOException {
+        assumeTrue(provider.isWriteSupported(), "Test skipped because provider is not writable");
+        // Given
+        Folder parent = root.mkdir("parent");
+        parent.copy("file1.txt", createMockFile("content1"), null);
+        parent.mkdir("subfolder");
+
+        assertTrue(parent.exists());
+
+        // When
+        parent.delete();
+
+        // Then
+        assertFalse(root.list().stream().anyMatch(e -> e.getName().equals("parent")),
+                "Folder should be in root.list() after deletion");
+        Entry afterDelete = provider.get("/parent");
+        assertFalse(afterDelete.exists(), "Folder should not exist after deletion");
+
+        Entry childAfterDelete = provider.get("/parent/file1.txt");
+        assertFalse(childAfterDelete.exists(), "Child file should not exist after parent deletion");
+
+        Entry subfolderAfterDelete = provider.get("/parent/subfolder");
+        assertFalse(subfolderAfterDelete.exists(), "Subfolder should not exist after parent deletion");
+
+        // Check that folder can be deleted twice
+        assertDoesNotThrow(parent::delete);
+
+        // That subfolder of a deleted folder can be deleted
+        assertDoesNotThrow(subfolderAfterDelete::delete);
+
+        // Check root folder can't be deleted
+        assertThrows(IOException.class, () -> root.delete(), "Should throw IOException when root folder is deleted");
+    }
+    
+    @Test
+    protected void testPreload() throws IOException {
+        Folder folder = getAFolder();
+        if (provider.isFastListSupported()) {
+            assertDoesNotThrow(folder::preload);
+        } else {
+            assertThrows(UnsupportedOperationException.class, folder::preload);
+        }
     }
 
     /**

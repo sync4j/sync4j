@@ -42,7 +42,8 @@ public interface Folder extends Entry {
      * @param content the content of the file to write (can't be null)
      * @param progressListener an optional listener to track copy progress (can be null).
      * <br>The long sent to the listener is the number of bytes copied since the begining of the copy.
-     * @return the copied file
+     * @return the copied file. Its content, last modified time and creation time are copied from the source file.
+     * <br>Please note that the copy of the creation time may not be performed on all FileProviders (this attribute is typically immutable on most Linux file systems).
      * @throws IOException if an I/O error occurs
      */
     @Nonnull

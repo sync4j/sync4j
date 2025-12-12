@@ -25,7 +25,8 @@ import com.fathzer.sync4j.util.ProgressInputStream;
  * A local file.
  */
 class LocalFile implements File, Folder {
-    private final Path path;
+    private static final String CREATION_TIME = "creationTime";
+	private final Path path;
     private final LocalProvider provider;
 
     /**
@@ -81,7 +82,7 @@ class LocalFile implements File, Folder {
 
     @Override
     public long getCreationTime() throws IOException {
-        final FileTime attribute = (FileTime) Files.getAttribute(path, "creationTime");
+        final FileTime attribute = (FileTime) Files.getAttribute(path, CREATION_TIME);
         return attribute.toMillis();
     }
 
@@ -158,7 +159,7 @@ class LocalFile implements File, Folder {
 
         // Note: Setting creation time is platform dependent and may not work on all systems
         try {
-            Files.setAttribute(targetPath, "creationTime", FileTime.fromMillis(content.getCreationTime()));
+            Files.setAttribute(targetPath, CREATION_TIME, FileTime.fromMillis(content.getCreationTime()));
         } catch (UnsupportedOperationException | IOException e) {
             // Ignore if setting creation time is not supported
         }
