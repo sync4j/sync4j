@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
@@ -61,6 +62,21 @@ class MemoryFileProviderTest extends AbstractFileProviderTest {
         assertThrows(IOException.class,
                 () -> root().createFile("folder", "content".getBytes(StandardCharsets.UTF_8)),
                 "Should throw IOException when path is a folder");
+    }
+
+    @Test
+    void testSetContent() throws IOException {
+        File srcFile = createMockFile("content");
+        Mockito.when(srcFile.getLastModifiedTime()).thenReturn(1234567L);
+        MemoryFile destFile = root().copy("test.txt", srcFile, null);
+        long lastModified = destFile.getLastModifiedTime();
+
+        destFile.setContent("other content".getBytes());
+
+        try (InputStream is = destFile.getInputStream()) {
+            assertArrayEquals("other content".getBytes(), is.readAllBytes(), "Content should match");
+        }
+        assertNotEquals(lastModified, destFile.getLastModifiedTime());
     }
     
     @Test

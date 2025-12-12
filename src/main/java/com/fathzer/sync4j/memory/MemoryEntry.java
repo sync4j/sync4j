@@ -17,10 +17,8 @@ abstract class MemoryEntry implements Entry {
     final MemoryFileProvider provider;
 
     protected MemoryEntry(@Nonnull String path, @Nonnull MemoryFileProvider provider) {
-        this.path = Objects.requireNonNull(path, "Path must not be null");
-        if (!path.isEmpty() && !path.startsWith("/")) {
-            throw new IllegalArgumentException("Path must start with '/'");
-        }
+        provider.checkPath(path);
+        this.path = path;
         this.provider = Objects.requireNonNull(provider);
     }
 
