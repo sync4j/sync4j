@@ -21,10 +21,10 @@ public class LocalProvider extends AbstractFileProvider {
      */
     public LocalProvider(Path rootPath) {
         super(true, List.of(HashAlgorithm.values()), false);
-        if (!Files.isDirectory(rootPath)) {
+        this.rootPath = rootPath.toAbsolutePath();
+        if (!Files.isDirectory(this.rootPath)) {
             throw new IllegalArgumentException("Root path must be a directory");
         }
-        this.rootPath = rootPath;
     }
 
     @Override

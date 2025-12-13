@@ -220,4 +220,14 @@ class LocalFileTest extends AbstractFileProviderTest {
         // Check that the file has been deleted
         assertFalse(Files.exists(tempDir.resolve(tmpDirPath)));
     }
+
+    @Test
+    void bug20251113() throws IOException {
+        try (LocalProvider other = new LocalProvider(java.nio.file.Paths.get(""))) {
+            // getParent() and getName() of root folder did not return the right value
+            Entry entry = other.get(FileProvider.ROOT_PATH);
+            assertNull(entry.getParent());
+            assertTrue(entry.getName().isEmpty());
+        }
+    }
 }
