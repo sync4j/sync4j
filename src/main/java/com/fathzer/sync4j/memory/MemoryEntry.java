@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.fathzer.sync4j.Entry;
 import com.fathzer.sync4j.FileProvider;
+import com.fathzer.sync4j.helper.PathUtils;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -25,22 +26,14 @@ abstract class MemoryEntry implements Entry {
     @Override
     @Nonnull
     public String getName() {
-        return path.substring(path.lastIndexOf('/') + 1);
+        return PathUtils.getName(path);
     }
 
-    @Nullable
-    private String getParentPath() {
-        if (MemoryFileProvider.ROOT_PATH.equals(path)) {
-            return null;
-        }
-        int lastSlash = path.lastIndexOf('/');
-        return lastSlash == 0 ? MemoryFileProvider.ROOT_PATH : path.substring(0, lastSlash);
-    }
 
     @Override
     @Nullable
     public Entry getParent() throws IOException {
-        String parentPath = getParentPath();
+        String parentPath = PathUtils.getParent(path);
         if (parentPath == null) {
             return null;
         }
