@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.util.Objects;
 import java.util.function.LongConsumer;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * An input stream that reports read progress to a listener.
  */
@@ -19,7 +21,7 @@ public class ProgressInputStream extends InputStream {
      * @param listener the progress listener to notify
      * @throws NullPointerException if delegate or listener is null
      */
-    public ProgressInputStream(InputStream delegate, LongConsumer listener) {
+    public ProgressInputStream(@Nonnull InputStream delegate, @Nonnull LongConsumer listener) {
         this.delegate = Objects.requireNonNull(delegate, "Delegate stream cannot be null");
         this.listener = Objects.requireNonNull(listener, "Listener cannot be null");
         this.bytesRead = 0;
@@ -39,7 +41,7 @@ public class ProgressInputStream extends InputStream {
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public int read(@Nonnull byte[] b, int off, int len) throws IOException {
         int count = delegate.read(b, off, len);
         if (count > 0) {
             bytesRead += count;

@@ -19,37 +19,15 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.pcloud.sdk</groupId>
-      <artifactId>java-core</artifactId>
-      <version>1.9.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.13.2</version>
-    </dependency>
-    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
       <version>2.1.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <version>5.13.4</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>5.13.4</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <version>5.20.0</version>
+      <groupId>com.fathzer</groupId>
+      <artifactId>sync4j-test-utils</artifactId>
+      <version>0.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -61,7 +39,7 @@
   </dependencies>
 
   <build>
-    <!-- Magic incantation to make Mockito work with JDK 21+ -->
+    <!-- Magic incantation to prevent Mockito warnings with JDK 21+ -->
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

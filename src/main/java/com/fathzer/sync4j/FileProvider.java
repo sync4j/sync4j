@@ -120,6 +120,26 @@ public interface FileProvider extends AutoCloseable {
     }
 
     /**
+     * Returns the precision of the last modified time.
+     * <br>By default, this method returns 0 which means the last modified time is precise to the millisecond.
+     * @return the precision of the last modified time in ms (a value of 999 means the last modified time is precise to the second - at least 999 ms between the reported time and the actual time).
+     * @see File#getLastModifiedTime()
+     */
+    default long getLastModifiedTimePrecision() {
+        return 0;
+    }
+
+    /**
+     * Returns the precision of the creation time.
+     * <br>By default, this method returns 0 which means the creation time is precise to the millisecond.
+     * @return the precision of the creation time in ms (a value of 999 means the creation time is precise to the second - at least 999 ms between the reported time and the actual time)
+     * If the provider does not support creation time, this method should return Long.MAX_VALUE.
+     */
+    default long getCreationTimePrecision() {
+        return 0;
+    }
+
+    /**
      * Closes this provider.
      * <br>This method is called when the provider is no longer needed.
      * <br>It should release any resources held by the provider.

@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 
+import org.junit.jupiter.api.TestInfo;
+
 import com.fathzer.sync4j.memory.MemoryFileProvider;
 import com.fathzer.sync4j.test.AbstractNonWritableFileProviderTest;
 
@@ -129,7 +131,8 @@ class ReadOnlyProviderTest extends AbstractNonWritableFileProviderTest {
     }
 
     @Override
-    protected FileProvider createFileProvider() {
+    @SuppressWarnings("java:S2924")
+    protected FileProvider createFileProvider(TestInfo testInfo) {
         return PROVIDER;
     }
 }

@@ -29,8 +29,13 @@ public interface FileComparator {
 
     /**
      * A comparator that compares files by last modified date.
+     * <br>It takes into account the precision of the last modified time of the providers of the files.
+     * @see FileProvider#getLastModifiedTimePrecision()
      */
-    public static final FileComparator MOD_DATE = (f1, f2) -> f1.getLastModifiedTime() == f2.getLastModifiedTime();
+    public static final FileComparator MOD_DATE = (f1, f2) -> {
+        final long precision = Math.max(f1.getFileProvider().getLastModifiedTimePrecision(), f2.getFileProvider().getLastModifiedTimePrecision());
+        return Math.abs(f1.getLastModifiedTime() - f2.getLastModifiedTime()) <= precision;
+    };
 
     /**
      * Returns a comparator that compares files by hash.

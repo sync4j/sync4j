@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.mockito.Mockito;
 
 import com.fathzer.sync4j.File;
@@ -18,7 +19,8 @@ import com.fathzer.sync4j.test.AbstractFileProviderTest;
 
 class MemoryFileProviderTest extends AbstractFileProviderTest {
     @Override
-    protected FileProvider createFileProvider() throws IOException {
+    @SuppressWarnings("java:S2924")
+    protected FileProvider createFileProvider(TestInfo testInfo) throws IOException {
         return new MemoryFileProvider();
     }
 

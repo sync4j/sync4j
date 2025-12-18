@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
@@ -34,7 +35,8 @@ class LocalFileTest extends AbstractFileProviderTest {
     private Path tempDir;
 
     @Override
-    protected FileProvider createFileProvider() {
+    @SuppressWarnings("java:S2924")
+    protected FileProvider createFileProvider(TestInfo testInfo) {
         return new LocalProvider(tempDir);
     }
 
@@ -84,22 +86,6 @@ class LocalFileTest extends AbstractFileProviderTest {
         return new LocalFileSystem();
     }
 
-    @Override
-    protected boolean isCreationTimeImmutable() throws IOException {
-        Path path = tempDir.resolve("creationTimeTest");
-        if (Files.exists(path)) {
-            throw new IllegalStateException("Unable to check creation time support without side effect: File " + path + " already exists");
-        }
-        try {
-            Files.createFile(path);
-            FileTime creationTime = FileTime.fromMillis(123456789);
-            Files.setAttribute(path, CREATION_TIME, creationTime);
-            return !Files.getAttribute(path, CREATION_TIME).equals(creationTime);
-        } finally {
-            Files.delete(path);
-        }
-    }
-
     @Mock
     private HashAlgorithm mockHashAlgorithm;
 
@@ -116,6 +102,23 @@ class LocalFileTest extends AbstractFileProviderTest {
     @Test
     void testHashList() {
         assertEquals(Arrays.asList(HashAlgorithm.values()), provider.getSupportedHash());
+    }
+
+    @Test
+    void testCreationTimePrecision() throws IOException {
+        Path path = tempDir.resolve("creationTimeTest");
+        if (Files.exists(path)) {
+            throw new IllegalStateException("Unable to check creation time support without side effect: File " + path + " already exists");
+        }
+        try {
+            Files.createFile(path);
+            FileTime creationTime = FileTime.fromMillis(123456789);
+            Files.setAttribute(path, CREATION_TIME, creationTime);
+            boolean isCreationTimeImmutable = !Files.getAttribute(path, CREATION_TIME).equals(creationTime);
+            assertEquals(isCreationTimeImmutable?Long.MAX_VALUE:0, provider.getCreationTimePrecision());
+        } finally {
+            Files.delete(path);
+        }
     }
 
     @Test

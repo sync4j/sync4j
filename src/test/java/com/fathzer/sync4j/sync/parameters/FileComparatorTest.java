@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -29,6 +30,12 @@ class FileComparatorTest {
     @Mock
     private FileProvider provider2;
 
+    @BeforeEach
+    void setUp() {
+        lenient().when(file1.getFileProvider()).thenReturn(provider1);
+        lenient().when(file2.getFileProvider()).thenReturn(provider2);
+    }
+
     @Test
     void testSizeComparator() throws Exception {
         // Given
@@ -47,6 +54,22 @@ class FileComparatorTest {
         // Given
         when(file1.getLastModifiedTime()).thenReturn(1000L);
         when(file2.getLastModifiedTime()).thenReturn(1000L);
+
+        // When/Then
+        assertTrue(FileComparator.MOD_DATE.areSame(file1, file2), "Files with same modification date should be equal");
+
+        when(file2.getLastModifiedTime()).thenReturn(2000L);
+        assertFalse(FileComparator.MOD_DATE.areSame(file1, file2),
+                "Files with different modification dates should not be equal");
+    }
+    
+    @Test
+    void testModDateComparatorWithPrecision() throws Exception {
+        // Given
+        when(file1.getLastModifiedTime()).thenReturn(15732L);
+        when(provider1.getLastModifiedTimePrecision()).thenReturn(999L);
+        when(file2.getLastModifiedTime()).thenReturn(15000L);
+        when(provider2.getLastModifiedTimePrecision()).thenReturn(99L);
         
         // When/Then
         assertTrue(FileComparator.MOD_DATE.areSame(file1, file2), "Files with same modification date should be equal");
