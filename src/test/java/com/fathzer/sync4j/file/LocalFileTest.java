@@ -59,8 +59,13 @@ class LocalFileTest extends AbstractFileProviderTest {
         }
 
         @Override
-        public void delete(String path) throws IOException {
+        public void deleteFile(String path) throws IOException {
             Files.delete(toPath(path));
+        }
+        
+        @Override
+        public void deleteFolder(String path) throws IOException {
+        	deleteFile(path);
         }
 
         @Override
