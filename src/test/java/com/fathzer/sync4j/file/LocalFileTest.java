@@ -26,6 +26,7 @@ import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 import com.fathzer.sync4j.test.AbstractFileProviderTest;
+import com.fathzer.sync4j.test.UnderlyingFileSystem;
 
 @ExtendWith(MockitoExtension.class)
 class LocalFileTest extends AbstractFileProviderTest {
@@ -40,7 +41,7 @@ class LocalFileTest extends AbstractFileProviderTest {
         return new LocalProvider(tempDir);
     }
 
-    private class LocalFileSystem implements AbstractFileProviderTest.UnderlyingFileSystem {
+    private class LocalFileSystem implements UnderlyingFileSystem {
 		private Path toPath(String path) {
             if (path.startsWith("/")) {
                 path = path.substring(1);
@@ -77,12 +78,12 @@ class LocalFileTest extends AbstractFileProviderTest {
             }
             assertEquals(Files.getLastModifiedTime(filePath).toMillis(), file.getLastModifiedTime());
             final FileTime attribute = (FileTime) Files.getAttribute(filePath, CREATION_TIME);
-            assertEquals(attribute.toMillis(), file.getCreationTime());
+            assertTrue(Math.abs(attribute.toMillis() - file.getCreationTime()) <= provider.getCreationTimePrecision());
         }
 
         @Override
-        public void assertUnderlyingFolderExist(String path) throws IOException {
-            assertTrue(Files.exists(toPath(path)));
+        public boolean underlyingFolderExists(String path) throws IOException {
+            return Files.isDirectory(toPath(path));
         }
     }
 

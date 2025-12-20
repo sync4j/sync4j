@@ -16,6 +16,7 @@ import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.HashAlgorithm;
 import com.fathzer.sync4j.test.AbstractFileProviderTest;
+import com.fathzer.sync4j.test.UnderlyingFileSystem;
 
 class MemoryFileProviderTest extends AbstractFileProviderTest {
     @Override
