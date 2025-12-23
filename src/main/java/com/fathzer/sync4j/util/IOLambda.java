@@ -34,4 +34,35 @@ public final class IOLambda {
          */
         T get() throws IOException;
     }
+
+    /**
+     * Function that throws IOException.
+     * 
+     * @param <T> the type of the input to the function
+     * @param <R> the type of the result of the function
+     */
+    @FunctionalInterface
+    public interface IOFunction<T, R> {
+        R apply(T t) throws IOException;
+    }
+
+    /**
+     * Consumer that throws IOException.
+     * 
+     * @param <T> the type of the input to the consumer
+     */
+    @FunctionalInterface
+    public interface IOConsumer<T> {
+        void accept(T t) throws IOException;
+    }
+
+    /**
+     * Predicate that throws IOException.
+     * 
+     * @param <T> the type of the input to the predicate
+     */
+    @FunctionalInterface
+    public interface IOPredicate<T> {
+        boolean test(T t) throws IOException;
+    }
 }
