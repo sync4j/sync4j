@@ -53,7 +53,7 @@ public interface Folder extends Entry {
      * Create a new folder in this folder.
      * @param folderName the name of the folder to create (can't be empty or null, can't contain path separator)
      * @return the created folder
-     * @throws IOException if an I/O error occurs (also if the file already exists, if create directory is not authorized, etc...)
+     * @throws IOException if an I/O error occurs (also if a file or folder with the same name already exists, if creating the directory is not authorized, etc...)
      */
     @Nonnull
     Folder mkdir(@Nonnull String folderName) throws IOException; 

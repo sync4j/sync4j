@@ -17,7 +17,7 @@ import jakarta.annotation.Nonnull;
  * <li>It exposes a strict tree of files and folders (no symlinks, no hard links, no junctions, only one root).</li>
  * <li>It uses a standard path syntax with '/' as the path separator.</li>
  * <li>File and folder names can't be empty, except for the root folder.</li>
- * <li>The root folder can't be deleted.</li>
+ * <li>The root folder should exist and can't be deleted. The constructor must throw an IOException if it does not exist.</li>
  * <li>File and folder names can't contain '/' (depending on the provider, other characters may also be forbidden).</li>
  * <li>It should preferably be thread-safe. If it does not support concurrent operations, the {@link SyncParameters#performance()} must be configured to use prevent unsupported concurrent operations.
  * <br>The {@link Entry} objects returned by the provider can be thread-safe or not.</li>
@@ -74,9 +74,11 @@ public interface FileProvider extends AutoCloseable {
     /**
      * Sets the provider to read-only mode.
      * <br>
-     * By default, this method throws an UnsupportedOperationException if the provider does not support write operations and the provider is <code>>readOnly</code> is true.
+     * By default, this method throws an UnsupportedOperationException if the provider does not support write operations
+     *  and <code>readOnly</code> is false.
      * It does nothing otherwise.
      * @param readOnly true to set the provider to read-only mode, false otherwise
+     * @see #isWriteSupported()
      */
     default void setReadOnly(boolean readOnly) {
         if (!isWriteSupported() && !readOnly) {
