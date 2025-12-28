@@ -28,6 +28,12 @@
       <groupId>com.fathzer</groupId>
       <artifactId>sync4j-test-utils</artifactId>
       <version>0.0.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fathzer</groupId>
+          <artifactId>sync4j</artifactId>
+        </exclusion>
+      </exclusions>
       <scope>test</scope>
     </dependency>
     <dependency>

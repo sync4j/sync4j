@@ -110,12 +110,12 @@ public interface FileProvider extends AutoCloseable {
             return List.of();
         }
         if (!path.startsWith("/")) {
-            throw new IllegalArgumentException("Path must start with '/'");
+            throw new IllegalArgumentException("Path must start with '/' but is "+path);
         }
         List<String> result = Arrays.stream(path.split("/")).skip(1).toList();
         result.forEach(part -> {
             if (part.isEmpty()) {
-                throw new IllegalArgumentException("Path cannot contain empty file names");
+                throw new IllegalArgumentException("Path cannot contain empty file names but is "+path);
             }
         });
         return result;
