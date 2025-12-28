@@ -1,0 +1,153 @@
+package com.fathzer.sync4j;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import com.fathzer.sync4j.sync.parameters.SyncParameters;
+
+import jakarta.annotation.Nonnull;
+
+/**
+ * A minimalist provider of files.
+ * <br>A file provider is responsible for fetching files and folders from a remote or local storage.
+ * <br>Here is a list of the rules that must be respected by a file provider:
+ * <ul>
+ * <li>It exposes a strict tree of files and folders (no symlinks, no hard links, no junctions, only one root).</li>
+ * <li>It uses a standard path syntax with '/' as the path separator.</li>
+ * <li>File and folder names can't be empty, except for the root folder.</li>
+ * <li>The root folder should exist and can't be deleted. The constructor must throw an IOException if it does not exist.</li>
+ * <li>File and folder names can't contain '/' (depending on the provider, other characters may also be forbidden).</li>
+ * <li>It should preferably be thread-safe. If it does not support concurrent operations, the {@link SyncParameters#performance()} must be configured to use prevent unsupported concurrent operations.
+ * <br>The {@link Entry} objects returned by the provider can be thread-safe or not.</li>
+ * </ul>
+*/
+public interface FileProvider extends AutoCloseable {
+    /**
+     * The root path.
+     * <br>Calling {@link #get(String)} with this path returns the root folder.
+     */
+    public static final String ROOT_PATH = "";
+
+    /**
+     * Returns the list of hash algorithms supported by this provider.
+     * @return the list of hash algorithms supported by this provider ordered from best to worst.
+     */
+    @Nonnull
+    default List<HashAlgorithm> getSupportedHash() {
+        return List.of();
+    }
+
+    /**
+     * Returns true if the provider supports the fast-list feature.
+     * <br>The fast list feature allows to recursively fetch metadata of all files
+     * and (sub-)folders of a folder during the {@link FileProvider#get(String)} call.
+     * Even if it is provider dependent, it is recommended to implement this feature by a unique call
+     * instead of fetching metadata of each file and (sub-)folder separately.
+     * <br>Of course, for very large datasets, using this feature may cause out of memory errors.
+     * @return a boolean
+     * @see Folder#preload()
+     */
+    default boolean isFastListSupported() {
+        return false;
+    }
+
+    /**
+     * Returns true if the provider supports read-only operations.
+     * <br>By default, this method returns true.
+     * @return a boolean
+     */
+    default boolean isWriteSupported() {
+        return true;
+    }
+
+    /**
+     * Returns true if the provider is in read-only mode.
+     * <br>By default, this method returns true if the provider does not support write operations and false otherwise.
+     * @return true if this provider is in read-only mode, false otherwise
+     */
+    default boolean isReadOnly() {
+        return !this.isWriteSupported();
+    }
+
+    /**
+     * Sets the provider to read-only mode.
+     * <br>
+     * By default, this method throws an UnsupportedOperationException if the provider does not support write operations
+     *  and <code>readOnly</code> is false.
+     * It does nothing otherwise.
+     * @param readOnly true to set the provider to read-only mode, false otherwise
+     * @see #isWriteSupported()
+     */
+    default void setReadOnly(boolean readOnly) {
+        if (!isWriteSupported() && !readOnly) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Returns the file or folder at the given path.
+     * @param path the path of the file. <br>
+     * @return the entry, even if it does not exist (see {@link Entry#exists()}), even the path is inconsistent (Typicaly an entry that is inside ... a file).
+     * @throws IOException if an I/O error occurs
+     * @throws IllegalArgumentException if the path is invalid (for instance it contains an empty file name or a character not allowed by the provider)
+     */
+    @Nonnull
+    Entry get(@Nonnull String path) throws IOException;
+
+    /**
+     * Checks if the path is valid.
+     * <br>This method is a helper to validate the path before fetching the entry in {@link #get(String)}.
+     * <br>By default, this method throws an IllegalArgumentException if the path contains an empty file name.
+     * @param path the path to check
+     * @return the list of file names in the path (excluding the root folder)
+     * @throws IllegalArgumentException if the path is invalid
+     */
+    default List<String> checkPath(@Nonnull String path) throws IllegalArgumentException {
+        Objects.requireNonNull(path, "Path cannot be null");
+        if (ROOT_PATH.equals(path)) {
+            return List.of();
+        }
+        if (!path.startsWith("/")) {
+            throw new IllegalArgumentException("Path must start with '/' but is "+path);
+        }
+        List<String> result = Arrays.stream(path.split("/")).skip(1).toList();
+        result.forEach(part -> {
+            if (part.isEmpty()) {
+                throw new IllegalArgumentException("Path cannot contain empty file names but is "+path);
+            }
+        });
+        return result;
+    }
+
+    /**
+     * Returns the precision of the last modified time.
+     * <br>By default, this method returns 0 which means the last modified time is precise to the millisecond.
+     * @return the precision of the last modified time in ms (a value of 999 means the last modified time is precise to the second - at least 999 ms between the reported time and the actual time).
+     * @see File#getLastModifiedTime()
+     */
+    default long getLastModifiedTimePrecision() {
+        return 0;
+    }
+
+    /**
+     * Returns the precision of the creation time.
+     * <br>By default, this method returns 0 which means the creation time is precise to the millisecond.
+     * @return the precision of the creation time in ms (a value of 999 means the creation time is precise to the second - at least 999 ms between the reported time and the actual time)
+     * If the provider does not support creation time, this method should return Long.MAX_VALUE.
+     */
+    default long getCreationTimePrecision() {
+        return 0;
+    }
+
+    /**
+     * Closes this provider.
+     * <br>This method is called when the provider is no longer needed.
+     * <br>It should release any resources held by the provider.
+     */
+    @Override
+    default void close() {
+        // Does nothing by default
+    }
+}

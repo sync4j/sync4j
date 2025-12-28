@@ -1,0 +1,80 @@
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.fathzer</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>1.1.0</version>
+  </parent>
+  <artifactId>sync4j</artifactId>
+  <version>0.0.1</version>
+
+  <name>sync4j</name>
+	<description>Sync4j</description>
+	<url>https://github.com/sync4j/sync4j</url>
+
+	<scm>
+		<url>https://github.com/sync4j/sync4j.git</url>
+		<connection>https://github.com/sync4j/sync4j.git</connection>
+	</scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sonar.organization>sync4j</sonar.organization>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <!-- Default empty argLine for Surefire. JaCoCo will override this when active (see Magic incantation below) -->
+    <argLine></argLine>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <version>2.1.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fathzer</groupId>
+      <artifactId>sync4j-test-utils</artifactId>
+      <version>0.0.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fathzer</groupId>
+          <artifactId>sync4j</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.3.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Magic incantation to prevent Mockito warnings with JDK 21+ -->
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+            <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+    <!-- End of magic Mockito incantation -->
+  </build>
+</project>
