@@ -81,6 +81,24 @@ Please note that by default, the synchronization will use 1 thread to walk folde
 
 If a provider does not support concurrent operations, it is recommended to use a single thread by setting the [performance](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/SyncParameters.java#L50) parameter to zero copy threads and zero compare threads. Compare and copy operations will then be performed sequentially with the folder walking.
 
+### Filtering entries
+
+`params.filter(predicate)` tells which entries are synchronized. The predicate is a `Predicate<Entry>` that you write as you want: it returns `true` for the entries to synchronize (the default one accepts everything). For instance, to skip the hidden files:
+```java
+    params.filter(entry -> !entry.getName().startsWith("."));
+```
+The filter is applied to files and folders, and the content of a folder that is rejected is not visited.
+
+If a list of include/exclude rules is what you need, `FilterRules` is a helper that builds such a predicate (you don't have to use it). Its rules are inspired by the filter rules of rclone:
+```java
+    params.filter(FilterRules.of(List.of("+ /photos/**.tmp", "- *.tmp")).toEntryFilter());
+```
+- A rule is `- pattern` (exclude) or `+ pattern` (include), the patterns are globs. The rules are tried in order, **the first one that matches an entry decides**, and an entry that no rule matches is synchronized. The example above excludes all the `.tmp` files, except the ones of `/photos`: the exception has to be before the general rule.
+- The patterns are matched against the path of the entry, which starts with `/` (`/photos/a.tmp`). A pattern that starts with `/` is anchored to the root. Any other pattern can match at any level: `*.tmp` matches `/a.tmp` and `/x/y/a.tmp`, and `photos/*.tmp` matches `/photos/a.tmp` and `/x/photos/a.tmp`.
+- `*` does not match `/`, `**` does. `/photos/**.tmp` matches the `.tmp` files of `/photos` and of all its sub folders, but `/photos/**/*.tmp` only the ones of its sub folders (the `/` after `**` is mandatory).
+- `- /cache` excludes the `cache` folder of the root and everything it contains, because an excluded folder is not visited. For the same reason, a `+` rule can't include something that is in an excluded folder: exclude files, not their folders.
+- To include only some entries, end with an exclusion of everything: `["+ *.jpg", "- **"]`.
+
 ## Errors and retries
 
 A failed operation is retried by the synchronization (never by the provider) when:
