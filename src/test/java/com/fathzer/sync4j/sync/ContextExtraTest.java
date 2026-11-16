@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -135,5 +136,40 @@ class ContextExtraTest {
     
         assertFalse(waiter.isAlive(), "Waiter thread should have completed");
         assertTrue(waiter.isInterrupted(), "Waiter thread should be interrupted");
+    }
+
+    @Test
+    void testTaskCounterIdleHandler() throws InterruptedException {
+        Context.TaskCounter counter = new Context.TaskCounter();
+        final AtomicInteger calls = new AtomicInteger();
+        // The first time the counter is idle, the handler starts a new pass
+        counter.setIdleHandler(() -> {
+            if (calls.incrementAndGet() == 1) {
+                counter.increment();
+                return true;
+            }
+            return false;
+        });
+        counter.increment();
+        counter.decrement();
+        assertEquals(1, calls.get());
+        assertEquals(1, counter.getPendingTasks());
+        assertFalse(counter.await(10, java.util.concurrent.TimeUnit.MILLISECONDS), "Should not be completed while a new pass is running");
+
+        counter.decrement();
+        assertEquals(2, calls.get());
+        assertTrue(counter.await(10, java.util.concurrent.TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    void testTaskCounterFailingIdleHandler() throws InterruptedException {
+        Context.TaskCounter counter = new Context.TaskCounter();
+        counter.setIdleHandler(() -> {
+            throw new IllegalStateException("Test");
+        });
+        counter.increment();
+        assertThrows(IllegalStateException.class, counter::decrement);
+        // Waiters must not be blocked forever
+        assertTrue(counter.await(10, java.util.concurrent.TimeUnit.MILLISECONDS));
     }
 }

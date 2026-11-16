@@ -1,5 +1,6 @@
 package com.fathzer.sync4j.sync;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -62,6 +63,19 @@ public class Statistics {
             Counter other = (Counter) obj;
             return total.get() == other.total.get() && done.get() == other.done.get();
         }
+    }
+
+    /**
+     * Prepares the statistics for a new pass.
+     * <br>The tasks that were planned but did not complete are forgotten (total is set to done): the new pass plans them again if they are still needed.
+     * The skipped entries are counted again by the new pass.
+     */
+    void startNewPass() {
+        for (Counter counter : List.of(preloadedFolders, listedFolders, checkedFiles, deletedFiles, copiedFiles, copiedBytes, deletedFolders, createdFolders)) {
+            counter.total().set(counter.done().get());
+        }
+        skippedFiles.set(0);
+        skippedFolders.set(0);
     }
 
     private Counter preloadedFolders = new Counter();

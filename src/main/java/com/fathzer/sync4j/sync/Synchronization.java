@@ -1,14 +1,22 @@
 package com.fathzer.sync4j.sync;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
+import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.fathzer.sync4j.Folder;
+import com.fathzer.sync4j.RetryableIOException;
+import com.fathzer.sync4j.sync.parameters.RetryParameters;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 import jakarta.annotation.Nonnull;
@@ -19,9 +27,13 @@ import jakarta.annotation.Nonnull;
  * while the synchronizer is running.
  */
 public class Synchronization implements AutoCloseable {
+    private final Folder rootSource;
+    private final Folder rootDestination;
+    // The source and destination of the current pass (they can be replaced by their preloaded version)
     private Folder source;
     private Folder destination;
     private final Context context;
+    private final AtomicInteger pass = new AtomicInteger(1);
 
     /**
      * Creates a new synchronizer.
@@ -35,8 +47,10 @@ public class Synchronization implements AutoCloseable {
     }
 
     Synchronization(@Nonnull Context context, @Nonnull Folder source, @Nonnull Folder destination) {
-        this.source = Objects.requireNonNull(source);
-        this.destination = Objects.requireNonNull(destination);
+        this.rootSource = Objects.requireNonNull(source);
+        this.rootDestination = Objects.requireNonNull(destination);
+        this.source = source;
+        this.destination = destination;
         this.context = Objects.requireNonNull(context);
     }
 
@@ -44,8 +58,17 @@ public class Synchronization implements AutoCloseable {
      * Starts the synchronization.
      */
     public void start() {
+        pass.set(1);
+        context.taskCounter().setIdleHandler(this::onPassFinished);
+        runPass();
+    }
+
+    private void runPass() {
         context.taskCounter().increment();
         try {
+            // Restart from the original folders (a preloaded folder is a snapshot that can be outdated)
+            source = rootSource;
+            destination = rootDestination;
             if (context.params().performance().fastList()) {
                 doPreload();
             }
@@ -56,6 +79,57 @@ public class Synchronization implements AutoCloseable {
         } finally {
             context.taskCounter().decrement();
         }
+    }
+
+    /**
+     * Called when a pass is over.
+     * @return true if a new pass was scheduled (the task counter is then incremented until the new pass starts)
+     */
+    private boolean onPassFinished() {
+        final RetryParameters retry = context.params().retry();
+        final int current = pass.get();
+        if (current >= retry.maxPasses() || context.isCancelled()) {
+            return false;
+        }
+        final List<Throwable> errors = context.errors();
+        if (errors.stream().noneMatch(this::isWorthANewPass)) {
+            return false;
+        }
+        final Duration retryAfter = errors.stream()
+                .filter(RetryableIOException.class::isInstance)
+                .map(e -> ((RetryableIOException) e).getRetryAfter())
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null);
+        final Duration delay = retry.delay(current, retryAfter);
+        if (delay == null) {
+            return false;
+        }
+        pass.incrementAndGet();
+        context.startNewPass();
+        // The synchronization is not over while it waits for the next pass
+        context.taskCounter().increment();
+        CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS).execute(() -> {
+            try {
+                runPass();
+            } finally {
+                context.taskCounter().decrement();
+            }
+        });
+        return true;
+    }
+
+    /**
+     * Tests if an error that happened during a pass can be solved by a new pass.
+     * @param error the error
+     * @return true if it can
+     */
+    private boolean isWorthANewPass(Throwable error) {
+        if (error instanceof RetryableIOException) {
+            return true;
+        }
+        // These errors can be a propagation delay, but only if the destination is not strongly consistent
+        final boolean maybePropagationDelay = error instanceof FileNotFoundException || error instanceof NoSuchFileException || error instanceof FileAlreadyExistsException;
+        return maybePropagationDelay && !rootDestination.getFileProvider().isStronglyConsistent();
     }
 
     void doPreload() throws InterruptedException {

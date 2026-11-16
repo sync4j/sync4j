@@ -3,7 +3,10 @@ package com.fathzer.sync4j.sync;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -17,12 +20,93 @@ import static com.fathzer.sync4j.util.PrivateFields.getFieldValue;
 import org.junit.jupiter.api.Test;
 
 import com.fathzer.sync4j.Entry;
+import com.fathzer.sync4j.FileProvider;
+import com.fathzer.sync4j.Folder;
 import com.fathzer.sync4j.sync.Context.Result;
 import com.fathzer.sync4j.sync.Event.Action;
 import com.fathzer.sync4j.sync.Task.Kind;
 import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class ContextTest {
+
+    private static Folder folder(boolean stronglyConsistent) throws IOException {
+        FileProvider provider = mock(FileProvider.class);
+        when(provider.isStronglyConsistent()).thenReturn(stronglyConsistent);
+        Folder folder = mock(Folder.class);
+        when(folder.getFileProvider()).thenReturn(provider);
+        return folder;
+    }
+
+    @Test
+    void testThrottle() throws Exception {
+        // No limit by default
+        try (Context context = new Context(new SyncParameters())) {
+            long start = System.nanoTime();
+            for (int i = 0; i < 100; i++) {
+                context.throttle();
+            }
+            assertTrue(System.nanoTime() - start < java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(500));
+        }
+        // With a limit
+        SyncParameters parameters = new SyncParameters();
+        parameters.performance().maxOperationsPerSecond(50);
+        try (Context context = new Context(parameters)) {
+            long start = System.nanoTime();
+            for (int i = 0; i < 6; i++) {
+                context.throttle();
+            }
+            assertTrue(System.nanoTime() - start >= java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(90));
+        }
+    }
+
+    @Test
+    void testIsPropagationDelay() throws IOException {
+        try (Context context = new Context(new SyncParameters())) {
+            final Folder parent = folder(false);
+            final Folder child = folder(false);
+            when(parent.mkdir("child")).thenReturn(child);
+            final Folder other = folder(false);
+            final FileNotFoundException notFound = new FileNotFoundException("missing");
+            final FileAlreadyExistsException exists = new FileAlreadyExistsException("exists");
+
+            // Folders that were not created by the synchronization may really not exist
+            assertFalse(context.isPropagationDelay(notFound, child, false));
+            assertEquals(child, context.createFolder(parent, "child"));
+            assertTrue(context.isPropagationDelay(notFound, child, false));
+            assertTrue(context.isPropagationDelay(new NoSuchFileException("missing"), child, false));
+            assertFalse(context.isPropagationDelay(notFound, other, false));
+
+            // An existing entry is a propagation delay only after a deletion
+            assertFalse(context.isPropagationDelay(exists, child, false));
+            assertTrue(context.isPropagationDelay(exists, child, true));
+
+            // Other errors are definitive
+            assertFalse(context.isPropagationDelay(new IOException("forbidden"), child, true));
+        }
+    }
+
+    @Test
+    void testIsPropagationDelayWithStronglyConsistentProvider() throws IOException {
+        try (Context context = new Context(new SyncParameters())) {
+            final Folder parent = folder(true);
+            final Folder child = folder(true);
+            when(parent.mkdir("child")).thenReturn(child);
+            context.createFolder(parent, "child");
+            assertFalse(context.isPropagationDelay(new FileNotFoundException("missing"), child, true));
+            assertFalse(context.isPropagationDelay(new FileAlreadyExistsException("exists"), child, true));
+        }
+    }
+
+    @Test
+    void testDryRunDoesNotRegisterCreatedFolders() throws IOException {
+        SyncParameters parameters = new SyncParameters().dryRun(true);
+        try (Context context = new Context(parameters)) {
+            final Folder parent = folder(false);
+            Folder created = context.createFolder(parent, "child");
+            assertNotNull(created);
+            assertTrue(getFieldValue(context, "createdFolders", java.util.Set.class).isEmpty());
+        }
+    }
 
     @Test
     void test() {

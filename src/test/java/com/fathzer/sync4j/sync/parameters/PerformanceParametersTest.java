@@ -106,4 +106,16 @@ class PerformanceParametersTest {
         assertEquals(3, params.maxCopyThreads(), "maxCopyThreads should be 3");
         assertEquals(4, params.maxComparisonThreads(), "maxComparisonThreads should be 4");
     }
+
+    @Test
+    void testMaxOperationsPerSecond() {
+        PerformanceParameters params = new PerformanceParameters();
+        assertEquals(0, params.maxOperationsPerSecond(), "Default should be no limit");
+        assertSame(params, params.maxOperationsPerSecond(2.5));
+        assertEquals(2.5, params.maxOperationsPerSecond());
+        params.maxOperationsPerSecond(Double.POSITIVE_INFINITY);
+        assertEquals(0, params.maxOperationsPerSecond(), "Infinity means no limit");
+        assertThrows(IllegalArgumentException.class, () -> params.maxOperationsPerSecond(-1));
+        assertThrows(IllegalArgumentException.class, () -> params.maxOperationsPerSecond(Double.NaN));
+    }
 }

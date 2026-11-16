@@ -7,8 +7,24 @@ import com.fathzer.sync4j.sync.Event.CreateFolderAction;
 
 class CreateFolderTask extends Task<Folder, CreateFolderAction> {
 
+    private final boolean afterDelete;
+
     CreateFolderTask(Context context, Folder destination, String name) {
+        this(context, destination, name, false);
+    }
+
+    /**
+     * Constructor.
+     * @param afterDelete true if the task follows the deletion of an entry with the same name
+     */
+    CreateFolderTask(Context context, Folder destination, String name, boolean afterDelete) {
         super(context, new CreateFolderAction(destination, name), context.statistics().createdFolders());
+        this.afterDelete = afterDelete;
+    }
+
+    @Override
+    protected boolean isPropagationDelay(IOException e) {
+        return context().isPropagationDelay(e, action().folder(), afterDelete);
     }
 
     @Override

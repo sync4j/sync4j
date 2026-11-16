@@ -1,6 +1,7 @@
 package com.fathzer.sync4j.memory;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -80,7 +81,7 @@ public class MemoryFile extends MemoryEntry implements File {
     @Override
     public long getSize() throws IOException {
         if (!exists()) {
-            throw new IOException("File does not exist: " + path);
+            throw new FileNotFoundException("File does not exist: " + path);
         }
         return content.length;
     }
@@ -88,7 +89,7 @@ public class MemoryFile extends MemoryEntry implements File {
     @Override
     public long getCreationTime() throws IOException {
         if (content == null) {
-            throw new IOException("File does not exist: " + path);
+            throw new FileNotFoundException("File does not exist: " + path);
         }
         return creationTime;
     }
@@ -96,7 +97,7 @@ public class MemoryFile extends MemoryEntry implements File {
     @Override
     public long getLastModifiedTime() throws IOException {
         if (content == null) {
-            throw new IOException("File does not exist: " + path);
+            throw new FileNotFoundException("File does not exist: " + path);
         }
         return lastModified;
     }
@@ -105,7 +106,7 @@ public class MemoryFile extends MemoryEntry implements File {
     @Nonnull
     public String getHash(@Nonnull HashAlgorithm hashAlgorithm) throws IOException {
         if (content == null) {
-            throw new IOException("File does not exist: " + path);
+            throw new FileNotFoundException("File does not exist: " + path);
         }
         return hashAlgorithm.computeHash(content);
     }
@@ -114,7 +115,7 @@ public class MemoryFile extends MemoryEntry implements File {
     @Nonnull
     public InputStream getInputStream() throws IOException {
         if (content == null) {
-            throw new IOException("File does not exist: " + path);
+            throw new FileNotFoundException("File does not exist: " + path);
         }
         return new ByteArrayInputStream(content);
     }

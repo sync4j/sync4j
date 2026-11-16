@@ -1,12 +1,17 @@
 package com.fathzer.sync4j.sync;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import com.fathzer.sync4j.Entry;
@@ -56,6 +62,17 @@ class Context implements AutoCloseable {
         private final AtomicLong pendingTasks = new AtomicLong(0);
         private final CountDownLatch completionLatch = new CountDownLatch(1);
         private BiConsumer<TaskCounter, Boolean> eventConsumer = (tc, add) -> {};
+        private volatile BooleanSupplier idleHandler = () -> false;
+
+        /**
+         * Sets the handler called when there is no more pending tasks.
+         * <br>It can start a new pass: it must then increment this counter before returning true.
+         * The completion latch is released only if it returns false.
+         * @param idleHandler the handler, that returns true if a new pass was started.
+         */
+        void setIdleHandler(BooleanSupplier idleHandler) {
+            this.idleHandler = idleHandler;
+        }
 
         void increment() {
             pendingTasks.incrementAndGet();
@@ -64,7 +81,14 @@ class Context implements AutoCloseable {
 
         void decrement() {
             if (pendingTasks.decrementAndGet() == 0) {
-                completionLatch.countDown();
+                boolean newPassStarted = false;
+                try {
+                    newPassStarted = idleHandler.getAsBoolean();
+                } finally {
+                    if (!newPassStarted) {
+                        completionLatch.countDown();
+                    }
+                }
             }
             eventConsumer.accept(this, false);
         }
@@ -93,13 +117,29 @@ class Context implements AutoCloseable {
     private final AtomicBoolean cancelled = new AtomicBoolean();
     private final Statistics statistics = new Statistics();
     private final TaskCounter taskCounter = new TaskCounter();
+    private final RateLimiter rateLimiter;
     private final List<Throwable> exceptions = new LinkedList<>();
+    /** The destination folders created by this synchronization. */
+    private final Set<Folder> createdFolders = ConcurrentHashMap.newKeySet();
 
     Context(SyncParameters parameters) {
         this.syncParameters = parameters;
         this.walkService = new ForkJoinPool(parameters.performance().maxWalkThreads());
         this.checkService = buildExecutorService(parameters.performance().maxComparisonThreads(), "check");
         this.copyService = buildExecutorService(parameters.performance().maxCopyThreads(), "copy");
+        final double maxOperationsPerSecond = parameters.performance().maxOperationsPerSecond();
+        this.rateLimiter = maxOperationsPerSecond > 0 ? new RateLimiter(maxOperationsPerSecond) : null;
+    }
+
+    /**
+     * Waits, if needed, until the next operation on a provider is allowed by the rate limit.
+     * <br>It does nothing if there is no limit.
+     * @throws InterruptedException if the thread is interrupted while waiting
+     */
+    void throttle() throws InterruptedException {
+        if (rateLimiter != null) {
+            rateLimiter.acquire();
+        }
     }
 
     private ExecutorService buildExecutorService(int threadCount, String prefix) {
@@ -116,6 +156,16 @@ class Context implements AutoCloseable {
 
     List<Throwable> errors() {
         return exceptions;
+    }
+
+    /**
+     * Resets what only makes sense inside a pass (errors, folders created by this pass).
+     * <br>The statistics keep what was done, but forget the tasks that failed (see {@link Statistics#startNewPass()}).
+     */
+    void startNewPass() {
+        exceptions.clear();
+        createdFolders.clear();
+        statistics.startNewPass();
     }
 
     void skip(Entry entry) {
@@ -153,8 +203,34 @@ class Context implements AutoCloseable {
      * @param destinationFolder the destination folder
      */
     void asyncCopy(File src, Folder destinationFolder) {
+        asyncCopy(src, destinationFolder, false);
+    }
+
+    private void asyncCopy(File src, Folder destinationFolder, boolean afterDelete) {
         CopyFileAction action = new CopyFileAction(src, destinationFolder);
-        tryExecute(() -> executeAsync(new CopyFileTask(this, action)), () -> action);
+        tryExecute(() -> executeAsync(new CopyFileTask(this, action, afterDelete)), () -> action);
+    }
+
+    /**
+     * Tests if an error can be a propagation delay on an eventually consistent destination.
+     * <br>It is the case if the provider is not strongly consistent and
+     * <ul>
+     * <li>the error says an entry does not exist, and the destination folder was created by this synchronization</li>
+     * <li>or the error says an entry already exists, and the synchronization has just deleted something with this name</li>
+     * </ul>
+     * @param e the error
+     * @param destinationFolder the folder where the failed operation was performed
+     * @param afterDelete true if the failed operation follows the deletion of an entry
+     * @return true if the operation is worth to be retried
+     */
+    boolean isPropagationDelay(IOException e, Folder destinationFolder, boolean afterDelete) {
+        if (destinationFolder.getFileProvider().isStronglyConsistent()) {
+            return false;
+        }
+        if (e instanceof FileNotFoundException || e instanceof NoSuchFileException) {
+            return createdFolders.contains(destinationFolder);
+        }
+        return afterDelete && e instanceof FileAlreadyExistsException;
     }
 
     void asyncCheckAndCopy(File src, File destinationFile) {
@@ -162,9 +238,17 @@ class Context implements AutoCloseable {
     }
 
     Folder createFolder(Folder destination, String name) {
-        final CreateFolderTask task = new CreateFolderTask(this, destination, name);
+        return createFolder(destination, name, false);
+    }
+
+    private Folder createFolder(Folder destination, String name, boolean afterDelete) {
+        final CreateFolderTask task = new CreateFolderTask(this, destination, name, afterDelete);
         final Result<Folder> result = tryExecute(() -> executeSync(task), task::action);
-        return result.value();
+        final Folder created = result.value();
+        if (created != null && !params().dryRun()) {
+            createdFolders.add(created);
+        }
+        return created;
     }
 
     void asyncDelete(Entry entry) {
@@ -173,12 +257,12 @@ class Context implements AutoCloseable {
 
     void deleteThenAsyncCopy(Folder toBeDeleted, Folder toBeDeleteParent, File source) {
         if (delete(toBeDeleted)) {
-            asyncCopy(source, toBeDeleteParent);
+            asyncCopy(source, toBeDeleteParent, true);
         }
     }
 
     Folder deleteThenCreate(File toBeDeleted, Folder toBeDeleteParent, Folder source) {
-        return delete(toBeDeleted) ? createFolder(toBeDeleteParent, source.getName()) : null;
+        return delete(toBeDeleted) ? createFolder(toBeDeleteParent, source.getName(), true) : null;
     }
 
     private boolean delete(Entry toBeDeleted) {
@@ -203,12 +287,29 @@ class Context implements AutoCloseable {
         if (task.onlySynchronous()) {
             throw new UnsupportedOperationException("Task " + this + " is only synchronous");
         }
-        return CompletableFuture.supplyAsync(buildAsyncSupplier(task), executorService(task))
-            .exceptionally(e -> {
-                processError(e, task.action());
-                return null;
-            }
-        );
+        // The task counter is decremented after the error processing: the synchronization can't be considered as finished
+        // (or ask for a new pass) while the error of a task is not yet recorded.
+        taskCounter.increment();
+        try {
+            return CompletableFuture.supplyAsync(() -> execute(task), executorService(task))
+                .exceptionally(e -> {
+                    processError(e, task.action());
+                    return null;
+                })
+                .whenComplete((result, e) -> taskCounter.decrement());
+        } catch (RuntimeException e) {
+            // The task was not submitted (the executor service rejected it)
+            taskCounter.decrement();
+            throw e;
+        }
+    }
+
+    private <V> V execute(Task<V, ?> task) {
+        try {
+            return executeSync(task);
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
 
     ExecutorService executorService(Task<?,?> task) {
@@ -218,28 +319,6 @@ class Context implements AutoCloseable {
             case MODIFIER -> copyService;
         };
         return executorService == null ? walkService : executorService;
-    }
-
-    /**
-     * Build a supplier that can be used to execute the task asynchronously.
-     * <p>
-     * WARNING: The supplier will register the task in the phaser and will deregister it when the task is done.
-     * So you absolutely must call supplier.get() to execute the task one time (and only one time).
-     * </p>
-     * @return the supplier
-     */
-    private <V> Supplier<V> buildAsyncSupplier(Task<V, ?> task) {
-        final Supplier<V> supplier = () -> {
-            try {
-                return executeSync(task);
-            } catch (Exception e) {
-                throw new CompletionException(e);
-            } finally {
-                taskCounter.decrement();
-            }
-        };
-        taskCounter.increment();
-        return supplier;
     }
 
     Future<Void> submit(RecursiveAction action) {

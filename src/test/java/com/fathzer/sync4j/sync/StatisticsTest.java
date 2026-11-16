@@ -16,6 +16,28 @@ class StatisticsTest {
     }
 
     @Test
+    void testStartNewPass() {
+        stats.copiedFiles().total().set(5);
+        stats.copiedFiles().done().set(3);
+        stats.copiedBytes().total().set(100);
+        stats.copiedBytes().done().set(60);
+        stats.deletedFiles().total().set(2);
+        stats.deletedFiles().done().set(2);
+        stats.skippedFiles().set(4);
+        stats.skippedFolders().set(1);
+
+        stats.startNewPass();
+
+        // The tasks that did not complete are forgotten, what is done is kept
+        assertEquals(new Statistics.Counter(3, 3), stats.copiedFiles());
+        assertEquals(new Statistics.Counter(60, 60), stats.copiedBytes());
+        assertEquals(new Statistics.Counter(2, 2), stats.deletedFiles());
+        // Skipped entries are counted again by the new pass
+        assertEquals(0, stats.skippedFiles().get());
+        assertEquals(0, stats.skippedFolders().get());
+    }
+
+    @Test
     void testInitialState() {
         assertCounterInitialized(stats.preloadedFolders());
         assertCounterInitialized(stats.listedFolders());

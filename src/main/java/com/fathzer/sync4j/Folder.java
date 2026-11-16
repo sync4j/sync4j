@@ -51,9 +51,14 @@ public interface Folder extends Entry {
     
     /**
      * Create a new folder in this folder.
+     * <br>This method is idempotent: if a folder with the same name already exists, nothing is created and that folder is returned
+     * (this makes the operation safe to retry, which matters for remote providers).
      * @param folderName the name of the folder to create (can't be empty or null, can't contain path separator)
-     * @return the created folder
-     * @throws IOException if an I/O error occurs (also if a file or folder with the same name already exists, if creating the directory is not authorized, etc...)
+     * @return the created (or already existing) folder
+     * @throws java.nio.file.FileAlreadyExistsException if a <b>file</b> with the same name already exists
+     * @throws java.io.FileNotFoundException if this folder does not exist (or a {@link java.nio.file.NoSuchFileException})
+     * @throws RetryableIOException if a transient error occurs
+     * @throws IOException if another I/O error occurs (creating the directory is not authorized, etc...)
      */
     @Nonnull
     Folder mkdir(@Nonnull String folderName) throws IOException; 

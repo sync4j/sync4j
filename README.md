@@ -75,9 +75,41 @@ A basic synchronization example (synchronizes a pCloud folder to a local folder)
     }
 ```
 
+If the remote storage throttles you, you can also limit the number of operations (listing a folder, comparing or copying a file, creating or deleting an entry) per second, whatever the number of threads: `params.performance().maxOperationsPerSecond(10)`. Retries count as operations. Please note that an operation can send several requests to the remote storage, so this is not a limit of requests per second. By default, there is no limit.
+
 Please note that by default, the synchronization will use 1 thread to walk folders, 1 thread to copy files and 1 thread to compare files. Increasing the number of threads can speed up the synchronization, but it may cause some issues with the remote storage (depending on the provider's policies).
 
 If a provider does not support concurrent operations, it is recommended to use a single thread by setting the [performance](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/SyncParameters.java#L50) parameter to zero copy threads and zero compare threads. Compare and copy operations will then be performed sequentially with the folder walking.
+
+## Errors and retries
+
+A failed operation is retried by the synchronization (never by the provider) when:
+- the provider reports a transient error (throttling, timeout, temporary server error...) by throwing a `RetryableIOException`,
+- or the provider is not [strongly consistent](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/FileProvider.java) (`FileProvider.isStronglyConsistent()`) and the operation fails in a way that can be a propagation delay: writing in a folder that was just created, or creating an entry right after the synchronization deleted one with the same name.
+
+By default, an operation is attempted 3 times in total (the first attempt plus 2 retries), waiting 1s before the first retry and 2s before the second one. If you allow more attempts, the delay doubles after each failure, without exceeding 30s. If the provider tells how long to wait (Retry-After), this delay is used instead, unless it is longer than the maximum delay.
+```java
+    params.retry().maxAttempts(5).initialDelay(Duration.ofMillis(500)).maxDelay(Duration.ofSeconds(10));
+```
+The local and in-memory providers are strongly consistent, so their errors are never retried.
+
+### Passes
+
+If some operations still fail after their retries, the synchronization can run again (a new *pass*). A new pass compares the source and the destination again, so it only does what remains to be done. This helps with eventually consistent storages, where something that was created or deleted during a pass may only be visible a bit later.
+
+- A new pass is started only if an error of the previous pass can be transient (a `RetryableIOException`, or an error that can be a propagation delay on a destination that is not strongly consistent). Definitive errors (authentication failure, read-only destination, etc.) never start a new pass.
+- By default, a synchronization runs at most 3 passes, with the same exponential delay as above between the passes (`params.retry().maxPasses(n)`, 1 means never run again).
+- **The default error manager cancels the synchronization on the first error, and a cancelled synchronization never starts a new pass.** To use passes, set an error manager that lets the synchronization continue:
+```java
+    params.errorManager((error, action) -> {
+        System.err.println(action + " failed: " + error);
+        return false; // true cancels the synchronization
+    });
+    params.retry().maxPasses(3);
+```
+- `Synchronization.waitFor()` returns when the last pass is over, and `getErrors()` returns the errors of the last pass.
+- Statistics keep what the previous passes did. The tasks that failed are not counted again by the new pass.
+- The events of a new pass use the same actions as the previous ones: an action that failed in a pass can be planned again (`PLANNED` after `FAILED`) in the next one.
 
 ## Implement your own provider
 
@@ -87,6 +119,7 @@ To implement your own provider, you should:
 - Implement the [FileProvider](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/FileProvider.java) interface.
 - Implement the [Folder](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/Folder.java) interface.
 - Implement the [File](https://github.com/sync4j/sync4j/blob/main/src/main/java/com/fathzer/sync4j/File.java) interface.
+- Respect the contract described in the `FileProvider` javadoc: `Folder.mkdir` is idempotent, `Folder.copy` overwrites, errors are reported with the right exception type (`RetryableIOException`, `FileNotFoundException`, `FileAlreadyExistsException`...), and the provider does not retry by itself. Declare `isStronglyConsistent()` if your storage guarantees that an operation is visible as soon as it returns.
 
 An example of a non trivial provider is the [pCloudProvider](https://github.com/fathzer/sync4j-pcloud).
 
