@@ -1,0 +1,2 @@
+com.fathzer.sync4j.file.LocalProviderFactory
+com.fathzer.sync4j.memory.MemoryProviderFactory
