@@ -31,12 +31,13 @@ class RetryParametersTest {
     @Test
     void testInvalidValues() {
         RetryParameters params = new RetryParameters();
+        final Duration negative = Duration.ofMillis(-1);
         assertThrows(IllegalArgumentException.class, () -> params.maxAttempts(0));
         assertThrows(IllegalArgumentException.class, () -> params.maxPasses(0));
-        assertThrows(IllegalArgumentException.class, () -> params.initialDelay(Duration.ofMillis(-1)));
+        assertThrows(IllegalArgumentException.class, () -> params.initialDelay(negative));
         assertThrows(IllegalArgumentException.class, () -> params.multiplier(0.5));
         assertThrows(IllegalArgumentException.class, () -> params.multiplier(Double.NaN));
-        assertThrows(IllegalArgumentException.class, () -> params.maxDelay(Duration.ofMillis(-1)));
+        assertThrows(IllegalArgumentException.class, () -> params.maxDelay(negative));
         assertThrows(NullPointerException.class, () -> params.initialDelay(null));
         assertThrows(NullPointerException.class, () -> params.maxDelay(null));
     }

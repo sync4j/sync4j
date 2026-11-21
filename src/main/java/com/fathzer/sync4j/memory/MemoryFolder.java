@@ -23,7 +23,7 @@ import jakarta.annotation.Nullable;
  */
 public class MemoryFolder extends MemoryEntry implements Folder {
     private final AtomicBoolean exists;
-    private Map<String, MemoryEntry> children;
+    private final Map<String, MemoryEntry> children;
 
     MemoryFolder(@Nonnull String path, @Nonnull MemoryFileProvider provider) {
         super(path, provider);

@@ -29,7 +29,7 @@ import com.fathzer.sync4j.sync.parameters.SyncParameters;
 
 class ContextTest {
 
-    private static Folder folder(boolean stronglyConsistent) throws IOException {
+    private static Folder folder(boolean stronglyConsistent) {
         FileProvider provider = mock(FileProvider.class);
         when(provider.isStronglyConsistent()).thenReturn(stronglyConsistent);
         Folder folder = mock(Folder.class);

@@ -21,7 +21,7 @@ class RateLimiter {
     }
 
     RateLimiter(double operationsPerSecond, LongSupplier nanoClock) {
-        if (!(operationsPerSecond > 0)) {
+        if (Double.isNaN(operationsPerSecond) || operationsPerSecond <= 0) {
             throw new IllegalArgumentException("operationsPerSecond must be > 0");
         }
         this.intervalNanos = Math.max(1L, (long) (TimeUnit.SECONDS.toNanos(1) / operationsPerSecond));

@@ -78,16 +78,16 @@ public class Statistics {
         skippedFolders.set(0);
     }
 
-    private Counter preloadedFolders = new Counter();
-    private Counter listedFolders = new Counter();
-    private Counter checkedFiles = new Counter();
-    private Counter deletedFiles = new Counter();
-    private Counter copiedFiles = new Counter();
-    private Counter copiedBytes = new Counter();
-    private Counter deletedFolders = new Counter();
-    private Counter createdFolders = new Counter();
-    private AtomicLong skippedFiles = new AtomicLong();
-    private AtomicLong skippedFolders = new AtomicLong();
+    private final Counter preloadedFolders = new Counter();
+    private final Counter listedFolders = new Counter();
+    private final Counter checkedFiles = new Counter();
+    private final Counter deletedFiles = new Counter();
+    private final Counter copiedFiles = new Counter();
+    private final Counter copiedBytes = new Counter();
+    private final Counter deletedFolders = new Counter();
+    private final Counter createdFolders = new Counter();
+    private final AtomicLong skippedFiles = new AtomicLong();
+    private final AtomicLong skippedFolders = new AtomicLong();
 
     /**
      * Returns the counter of preloaded folders.

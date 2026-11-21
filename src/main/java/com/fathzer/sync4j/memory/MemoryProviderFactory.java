@@ -13,6 +13,7 @@ import jakarta.annotation.Nonnull;
  */
 public class MemoryProviderFactory implements FileProviderFactory<Void> {
     /** The type of the provider. */
+    @SuppressWarnings ("java:S1845")
     public static final String TYPE = "memory";
 
     @Override

@@ -16,6 +16,7 @@ import com.fathzer.sync4j.file.LocalProvider;
 import com.fathzer.sync4j.file.LocalProviderFactory;
 import com.fathzer.sync4j.memory.MemoryFileProvider;
 import com.fathzer.sync4j.memory.MemoryProviderFactory;
+import com.fathzer.sync4j.util.IOLambda.IOFunction;
 
 class FileProviderFactoryTest {
     @Test
@@ -31,7 +32,9 @@ class FileProviderFactoryTest {
             assertTrue(provider.get("/file.txt").isFile());
         }
         // The root has to exist
-        assertThrows(RuntimeException.class, () -> factory.create(null).apply(tmp.resolve("missing").toString()));
+        final IOFunction<String, FileProvider> creator = factory.create(null);
+        final String missing = tmp.resolve("missing").toString();
+        assertThrows(RuntimeException.class, () -> creator.apply(missing));
     }
 
     @Test

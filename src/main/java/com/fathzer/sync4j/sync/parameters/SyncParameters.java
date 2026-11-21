@@ -23,8 +23,8 @@ public class SyncParameters {
     private boolean dryRun;
     private Predicate<Entry> filter;
     private FileComparator fileComparator;
-    private PerformanceParameters performance;
-    private RetryParameters retry;
+    private final PerformanceParameters performance;
+    private final RetryParameters retry;
     private Consumer<Event> eventListener;
     private BiPredicate<Throwable, Action> errorManager;
     

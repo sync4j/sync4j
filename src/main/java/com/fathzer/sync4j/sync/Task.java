@@ -94,8 +94,11 @@ abstract class Task<V, A extends Action> {
                 throttle();
                 return execute();
             } catch (IOException e) {
-                final Duration delay = attempt >= retry.maxAttempts() || context.isCancelled() || !isRetryable(e) ? null
-                    : retry.delay(attempt, e instanceof RetryableIOException r ? r.getRetryAfter() : null);
+                if (attempt >= retry.maxAttempts() || context.isCancelled() || !isRetryable(e)) {
+                    throw e;
+                }
+                final Duration retryAfter = e instanceof RetryableIOException r ? r.getRetryAfter() : null;
+                final Duration delay = retry.delay(attempt, retryAfter);
                 if (delay == null) {
                     throw e;
                 }

@@ -117,14 +117,12 @@ class ContextExtraTest {
         counter.increment(); // Make sure there's a pending task
     
         // Set up a thread that will be interrupted
+        // An assertion that fails in this thread does not fail the test: the outcome is checked by the test thread
+        final AtomicBoolean awaitInterrupted = new AtomicBoolean();
         Thread waiter = new Thread(() -> {
-            try {
-                counter.await();
-                fail("Should have been interrupted");
-            } catch (InterruptedException e) {
-                // Expected
-                Thread.currentThread().interrupt(); // Restore the interrupt status
-            }
+            assertThrows(InterruptedException.class, counter::await);
+            awaitInterrupted.set(true);
+            Thread.currentThread().interrupt(); // Restore the interrupt status
         });
     
         waiter.start();
@@ -135,6 +133,7 @@ class ContextExtraTest {
         waiter.join(1000);
     
         assertFalse(waiter.isAlive(), "Waiter thread should have completed");
+        assertTrue(awaitInterrupted.get(), "await should have been interrupted");
         assertTrue(waiter.isInterrupted(), "Waiter thread should be interrupted");
     }
 

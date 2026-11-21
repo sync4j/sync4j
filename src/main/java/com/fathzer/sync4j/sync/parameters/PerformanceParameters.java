@@ -131,7 +131,7 @@ public class PerformanceParameters {
      * @throws IllegalArgumentException if maxOperationsPerSecond is negative or not a number
      */
     public PerformanceParameters maxOperationsPerSecond(double maxOperationsPerSecond) {
-        if (!(maxOperationsPerSecond >= 0)) {
+        if (Double.isNaN(maxOperationsPerSecond) || maxOperationsPerSecond < 0) {
             throw new IllegalArgumentException("maxOperationsPerSecond must be >= 0");
         }
         this.maxOperationsPerSecond = Double.isInfinite(maxOperationsPerSecond) ? 0 : maxOperationsPerSecond;

@@ -132,7 +132,7 @@ public class RetryParameters {
      * @throws IllegalArgumentException if multiplier is less than 1 (or not a number)
      */
     public RetryParameters multiplier(double multiplier) {
-        if (!(multiplier >= 1)) {
+        if (Double.isNaN(multiplier) || multiplier < 1) {
             throw new IllegalArgumentException("multiplier must be >= 1");
         }
         this.multiplier = multiplier;

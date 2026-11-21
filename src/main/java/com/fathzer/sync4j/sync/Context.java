@@ -61,7 +61,10 @@ class Context implements AutoCloseable {
     static class TaskCounter {
         private final AtomicLong pendingTasks = new AtomicLong(0);
         private final CountDownLatch completionLatch = new CountDownLatch(1);
-        private BiConsumer<TaskCounter, Boolean> eventConsumer = (tc, add) -> {};
+        // The handlers are immutable functional objects that are only replaced, never modified: volatile is enough
+        @SuppressWarnings("java:S3077")
+        private volatile BiConsumer<TaskCounter, Boolean> eventConsumer = (tc, add) -> {};
+        @SuppressWarnings("java:S3077")
         private volatile BooleanSupplier idleHandler = () -> false;
 
         /**

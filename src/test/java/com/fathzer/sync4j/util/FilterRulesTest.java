@@ -116,7 +116,8 @@ class FilterRulesTest {
         final List<String> withNull = new ArrayList<>();
         withNull.add(null);
         assertThrows(NullPointerException.class, () -> FilterRules.of(withNull));
-        assertThrows(NullPointerException.class, () -> rules("- *.tmp").isExcluded(null));
+        final FilterRules tmpRules = rules("- *.tmp");
+        assertThrows(NullPointerException.class, () -> tmpRules.isExcluded(null));
         final IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> rules("- ok", "- [a"));
         assertTrue(e.getMessage().contains("[a"), e.getMessage());
         assertTrue(assertThrows(IllegalArgumentException.class, () -> rules("*.tmp")).getMessage().contains("'+ pattern'"));

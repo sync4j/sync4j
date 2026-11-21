@@ -33,7 +33,8 @@ class RetryableIOExceptionTest {
 
     @Test
     void testNegativeRetryAfter() {
-        assertThrows(IllegalArgumentException.class, () -> new RetryableIOException("x", null, Duration.ofSeconds(-1)));
+        final Duration negative = Duration.ofSeconds(-1);
+        assertThrows(IllegalArgumentException.class, () -> new RetryableIOException("x", null, negative));
     }
 
     @Test
