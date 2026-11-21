@@ -19,10 +19,32 @@ import jakarta.annotation.Nonnull;
  * <li>File and folder names can't be empty, except for the root folder.</li>
  * <li>The root folder should exist and can't be deleted. The constructor must throw an IOException if it does not exist.</li>
  * <li>File and folder names can't contain '/' (depending on the provider, other characters may also be forbidden).</li>
+ * <li>Folder creation ({@link Folder#mkdir(String)}) is idempotent and file copy ({@link Folder#copy(String, File, java.util.function.LongConsumer)}) overwrites an existing file,
+ * so these operations can safely be repeated.</li>
  * <li>It should preferably be thread-safe. If it does not support concurrent operations, the {@link SyncParameters#performance()} must be configured to use prevent unsupported concurrent operations.
  * <br>The {@link Entry} objects returned by the provider can be thread-safe or not.</li>
  * </ul>
-*/
+ * <h2>Consistency</h2>
+ * A provider is expected to be consistent for the client that uses it: once an operation (create, copy, delete) has returned, the following operations performed through the same provider instance see its result.
+ * <br>Nothing is guaranteed about other clients.
+ * <br>A provider that offers this guarantee (the local file system, for instance) declares it with {@link #isStronglyConsistent()}.
+ * The synchronization trusts such a provider's answers, whereas it may retry operations that fail on a provider that does not declare it
+ * (for instance, creating a file in a folder it has just created).
+ * <h2>Errors and retries</h2>
+ * The synchronization is responsible for retrying failed operations (number of attempts, delays, etc... are its business).
+ * A provider only has to tell what kind of error occurred, using the following exceptions:
+ * <ul>
+ * <li>{@link RetryableIOException}: the error is transient (throttling like HTTP 429, timeout, temporary server error, network glitch, etc...).
+ * If the server tells how long to wait (Retry-After header), the provider puts it in {@link RetryableIOException#getRetryAfter()}.</li>
+ * <li>{@link java.io.FileNotFoundException} (or {@link java.nio.file.NoSuchFileException}): an entry the operation needs does not exist (HTTP 404, for instance).
+ * A provider can't know if it is a definitive answer or a propagation delay, the caller knows more about its context.</li>
+ * <li>{@link java.nio.file.FileAlreadyExistsException}: {@link Folder#mkdir(String)} is called with the name of an existing <b>file</b>.</li>
+ * <li>Any other {@link java.io.IOException}: the error is definitive, retrying is pointless (invalid request, authentication or authorization failure, quota exceeded, read-only provider, etc...).</li>
+ * </ul>
+ * A provider <b>must not</b> retry by itself (this would multiply the attempts and delays), except for what is part of its protocol and is bounded (refreshing an expired token, for instance).
+ * <br>Every operation must leave the provider in a state where it can be attempted again.
+ * A provider that has to read the source of a copy several times must re-open the source stream (see {@link File#getInputStream()}) instead of reusing a stream that was already (partially) consumed.
+ */
 public interface FileProvider extends AutoCloseable {
     /**
      * The root path.
@@ -50,6 +72,17 @@ public interface FileProvider extends AutoCloseable {
      * @see Folder#preload()
      */
     default boolean isFastListSupported() {
+        return false;
+    }
+
+    /**
+     * Returns true if the provider is strongly consistent.
+     * <br>A strongly consistent provider guarantees that once an operation (create, copy, delete) has returned, the following operations
+     * performed through the same provider instance see its result. Its errors are therefore always definitive, except when it reports them with a {@link RetryableIOException}.
+     * <br>By default, this method returns false (the provider may be eventually consistent).
+     * @return true if the provider is strongly consistent
+     */
+    default boolean isStronglyConsistent() {
         return false;
     }
 

@@ -8,11 +8,12 @@ public class PerformanceParameters {
     private int maxWalkThreads;
     private int maxCopyThreads;
     private int maxComparisonThreads;
+    private double maxOperationsPerSecond;
     
     /**
      * Creates a new instance of PerformanceParameters.
      * <br>
-     * Default values are {@link #maxCopyThreads(int)} = 1 and {@link #maxComparisonThreads(int)} = 1.
+     * Default values are {@link #maxCopyThreads(int)} = 1, {@link #maxComparisonThreads(int)} = 1 and {@link #maxOperationsPerSecond(double)} = 0 (no limit).
      */
     public PerformanceParameters() {
         this.maxWalkThreads = 1;
@@ -107,6 +108,33 @@ public class PerformanceParameters {
             throw new IllegalArgumentException("maxComparisonThreads must be >= 0");
         }
         this.maxComparisonThreads = maxComparisonThreads;
+        return this;
+    }
+
+    /**
+     * Returns the maximum number of operations per second.
+     * @return the maximum number of operations per second (0 means no limit)
+     * @see #maxOperationsPerSecond(double)
+     */
+    public double maxOperationsPerSecond() {
+        return maxOperationsPerSecond;
+    }
+
+    /**
+     * Sets the maximum number of operations per second.
+     * <br>It slows down the synchronization to avoid being throttled by a remote storage, whatever the number of threads.
+     * <br>An operation is a task of the synchronization (listing a folder, comparing two files, copying a file, creating or deleting an entry),
+     * a task is counted each time it is attempted (retries included). A task can send several requests to the remote storage,
+     * so this is not a limit of requests per second. Operations are evenly spaced.
+     * @param maxOperationsPerSecond the maximum number of operations per second. 0 (the default) or {@link Double#POSITIVE_INFINITY} means no limit.
+     * @return this
+     * @throws IllegalArgumentException if maxOperationsPerSecond is negative or not a number
+     */
+    public PerformanceParameters maxOperationsPerSecond(double maxOperationsPerSecond) {
+        if (Double.isNaN(maxOperationsPerSecond) || maxOperationsPerSecond < 0) {
+            throw new IllegalArgumentException("maxOperationsPerSecond must be >= 0");
+        }
+        this.maxOperationsPerSecond = Double.isInfinite(maxOperationsPerSecond) ? 0 : maxOperationsPerSecond;
         return this;
     }
 }

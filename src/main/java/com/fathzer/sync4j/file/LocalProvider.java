@@ -15,6 +15,11 @@ import com.fathzer.sync4j.helper.AbstractFileProvider;
  * A local file provider.
  */
 public class LocalProvider extends AbstractFileProvider {
+    @Override
+    public boolean isStronglyConsistent() {
+        return true;
+    }
+
     private static final String CREATION_TIME = "creationTime";
     private static final long CREATION_TIME_PRECISION;
 

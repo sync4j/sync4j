@@ -23,7 +23,8 @@ public class SyncParameters {
     private boolean dryRun;
     private Predicate<Entry> filter;
     private FileComparator fileComparator;
-    private PerformanceParameters performance;
+    private final PerformanceParameters performance;
+    private final RetryParameters retry;
     private Consumer<Event> eventListener;
     private BiPredicate<Throwable, Action> errorManager;
     
@@ -32,11 +33,13 @@ public class SyncParameters {
      * <br>
      * Default file comparator is {@link FileComparator#SIZE} and {@link FileComparator#MOD_DATE}.
      * Default performance parameters is created by the default constructor of {@link PerformanceParameters}.
+     * Default retry parameters is created by the default constructor of {@link RetryParameters}.
      * Default filter is <code>entry -> true</code>. 
      */
     public SyncParameters() {
         this.fileComparator = FileComparator.of(List.of(FileComparator.SIZE, FileComparator.MOD_DATE));
         this.performance = new PerformanceParameters();
+        this.retry = new RetryParameters();
         this.filter = entry -> true;
         this.eventListener = event -> {};
         this.errorManager = (ex, a) -> {
@@ -92,6 +95,15 @@ public class SyncParameters {
         return this;
     }
     
+    /**
+     * Gets the retry parameters.
+     * @return the retry parameters
+     */
+    @Nonnull
+    public RetryParameters retry() {
+        return retry;
+    }
+
     /**
      * Gets the performance parameters.
      * @return the performance parameters

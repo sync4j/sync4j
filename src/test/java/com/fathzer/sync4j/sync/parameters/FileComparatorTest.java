@@ -95,6 +95,13 @@ class FileComparatorTest {
     }
     
     @Test
+    void testHashComparatorNeedsAnAlgorithm() {
+        // A null algorithm (no hash in common) is refused when the comparator is created, not at each comparison
+        final NullPointerException e = assertThrows(NullPointerException.class, () -> FileComparator.hash((HashAlgorithm) null));
+        assertTrue(e.getMessage().contains("hash algorithm"), e.getMessage());
+    }
+
+    @Test
     void testBestHashAlgorithm() {
         // Given
         when(provider1.getSupportedHash()).thenReturn(List.of(HashAlgorithm.MD5, HashAlgorithm.SHA1, HashAlgorithm.SHA256));

@@ -35,6 +35,18 @@ class MemoryFileProviderTest extends AbstractFileProviderTest {
     }
 
     @Test
+    void testStronglyConsistent() {
+        assertTrue(provider.isStronglyConsistent());
+    }
+
+    @Test
+    void testCopyOverFolderFails() throws IOException {
+        root.mkdir("name");
+        assertThrows(java.nio.file.FileAlreadyExistsException.class, () -> root.copy("name", createMockFile("content"), null));
+        assertTrue(root.getFileProvider().get("/name").isFolder(), "The folder should be left untouched");
+    }
+
+    @Test
     void testSupportedHash() {
         assertEquals(List.of(HashAlgorithm.values()), provider.getSupportedHash());
     }

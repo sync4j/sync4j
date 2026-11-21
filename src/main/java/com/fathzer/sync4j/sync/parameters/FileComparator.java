@@ -1,12 +1,14 @@
 package com.fathzer.sync4j.sync.parameters;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import com.fathzer.sync4j.File;
 import com.fathzer.sync4j.FileProvider;
 import com.fathzer.sync4j.HashAlgorithm;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 /**
  * A comparator used to compare two files.
@@ -41,8 +43,12 @@ public interface FileComparator {
      * Returns a comparator that compares files by hash.
      * @param hashAlgorithm the hash algorithm to use
      * @return a comparator that compares files by hash
+     * @throws NullPointerException if the algorithm is null (for instance, because {@link #hash(FileProvider, FileProvider)} found no common algorithm),
+     * which would otherwise make every comparison fail
      */
-    public static FileComparator hash(HashAlgorithm hashAlgorithm) {
+    @Nonnull
+    public static FileComparator hash(@Nonnull HashAlgorithm hashAlgorithm) {
+        Objects.requireNonNull(hashAlgorithm, "The hash algorithm is required to compare files by hash");
         return (f1, f2) -> f1.getHash(hashAlgorithm).equals(f2.getHash(hashAlgorithm));
     }
 
@@ -50,9 +56,11 @@ public interface FileComparator {
      * Returns the best hash algorithm supported by two providers.
      * @param provider the first provider
      * @param other the second provider
-     * @return the best hash algorithm supported by both providers. It supposes that FileProvider.getSupportedHash() returns a list sorted from best to worst.
+     * @return the best hash algorithm supported by both providers, or <b>null</b> if they have no algorithm in common (the files can't be compared by hash).
+     * It supposes that FileProvider.getSupportedHash() returns a list sorted from best to worst.
      */
-    public static HashAlgorithm hash(FileProvider provider, FileProvider other) {
+    @Nullable
+    public static HashAlgorithm hash(@Nonnull FileProvider provider, @Nonnull FileProvider other) {
         return provider.getSupportedHash().stream().filter(algo -> other.getSupportedHash().contains(algo)).findFirst().orElse(null);
     }
 

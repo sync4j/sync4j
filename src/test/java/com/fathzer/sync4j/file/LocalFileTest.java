@@ -41,6 +41,11 @@ class LocalFileTest extends AbstractFileProviderTest {
         return new LocalProvider(tempDir);
     }
 
+    @org.junit.jupiter.api.Test
+    void testStronglyConsistent() {
+        assertTrue(provider.isStronglyConsistent());
+    }
+
     private class LocalFileSystem implements UnderlyingFileSystem {
 		private Path toPath(String path) {
             if (path.startsWith("/")) {

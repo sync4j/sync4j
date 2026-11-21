@@ -1,5 +1,6 @@
 package com.fathzer.sync4j.sync;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -64,16 +65,29 @@ public class Statistics {
         }
     }
 
-    private Counter preloadedFolders = new Counter();
-    private Counter listedFolders = new Counter();
-    private Counter checkedFiles = new Counter();
-    private Counter deletedFiles = new Counter();
-    private Counter copiedFiles = new Counter();
-    private Counter copiedBytes = new Counter();
-    private Counter deletedFolders = new Counter();
-    private Counter createdFolders = new Counter();
-    private AtomicLong skippedFiles = new AtomicLong();
-    private AtomicLong skippedFolders = new AtomicLong();
+    /**
+     * Prepares the statistics for a new pass.
+     * <br>The tasks that were planned but did not complete are forgotten (total is set to done): the new pass plans them again if they are still needed.
+     * The skipped entries are counted again by the new pass.
+     */
+    void startNewPass() {
+        for (Counter counter : List.of(preloadedFolders, listedFolders, checkedFiles, deletedFiles, copiedFiles, copiedBytes, deletedFolders, createdFolders)) {
+            counter.total().set(counter.done().get());
+        }
+        skippedFiles.set(0);
+        skippedFolders.set(0);
+    }
+
+    private final Counter preloadedFolders = new Counter();
+    private final Counter listedFolders = new Counter();
+    private final Counter checkedFiles = new Counter();
+    private final Counter deletedFiles = new Counter();
+    private final Counter copiedFiles = new Counter();
+    private final Counter copiedBytes = new Counter();
+    private final Counter deletedFolders = new Counter();
+    private final Counter createdFolders = new Counter();
+    private final AtomicLong skippedFiles = new AtomicLong();
+    private final AtomicLong skippedFolders = new AtomicLong();
 
     /**
      * Returns the counter of preloaded folders.

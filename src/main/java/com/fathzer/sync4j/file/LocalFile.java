@@ -2,8 +2,10 @@ package com.fathzer.sync4j.file;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -171,7 +173,14 @@ class LocalFile implements File, Folder {
         provider.checkWriteable();
         checkFileName(folderName);
         final Path targetPath = path.resolve(folderName);
-        Files.createDirectory(targetPath);
+        try {
+            Files.createDirectory(targetPath);
+        } catch (FileAlreadyExistsException e) {
+            // mkdir is idempotent for folders, but a file with the same name is an error
+            if (!Files.isDirectory(targetPath, LinkOption.NOFOLLOW_LINKS)) {
+                throw e;
+            }
+        }
         return new LocalFile(targetPath, provider);
     }
 

@@ -16,6 +16,11 @@ import jakarta.annotation.Nonnull;
  * This provider supports all hash algorithms and read-only mode.
  */
 public class MemoryFileProvider extends AbstractFileProvider {
+    @Override
+    public boolean isStronglyConsistent() {
+        return true;
+    }
+
     /** The root path that can be passed to {@link #get(String)}. */
     public static final String ROOT_PATH = "";
 

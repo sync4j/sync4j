@@ -1,7 +1,9 @@
 package com.fathzer.sync4j.memory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +23,7 @@ import jakarta.annotation.Nullable;
  */
 public class MemoryFolder extends MemoryEntry implements Folder {
     private final AtomicBoolean exists;
-    private Map<String, MemoryEntry> children;
+    private final Map<String, MemoryEntry> children;
 
     MemoryFolder(@Nonnull String path, @Nonnull MemoryFileProvider provider) {
         super(path, provider);
@@ -67,7 +69,7 @@ public class MemoryFolder extends MemoryEntry implements Folder {
     @Nonnull
     public MemoryFolder mkdir(@Nonnull String folderName) throws IOException {
         if (!exists()) {
-            throw new IOException("Folder does not exist: " + path);
+            throw new FileNotFoundException("Folder does not exist: " + path);
         }
         checkFileName(folderName);
 
@@ -77,6 +79,11 @@ public class MemoryFolder extends MemoryEntry implements Folder {
 
         // Synchronized to prevent race condition on check-then-create
         synchronized (this) {
+            MemoryEntry existing = children.get(folderName);
+            if (existing instanceof MemoryFolder existingFolder && existingFolder.exists()) {
+                // mkdir is idempotent
+                return existingFolder;
+            }
             checkChildExists(folderName);
             MemoryFolder newFolder = new MemoryFolder(childPath, provider);
             children.put(folderName, newFolder);
@@ -88,7 +95,7 @@ public class MemoryFolder extends MemoryEntry implements Folder {
         MemoryEntry existing = children.get(childName);
         if (existing != null && existing.exists()) {
             // Warning if entry is being deleted by another thread, it could still be in the child map
-            throw new IOException("Entry already exists: " + buildChildPath(childName));
+            throw new FileAlreadyExistsException(buildChildPath(childName), null, "Entry already exists");
         }
     }
 
@@ -124,7 +131,7 @@ public class MemoryFolder extends MemoryEntry implements Folder {
     @Nonnull
     public List<Entry> list() throws IOException {
         if (!exists()) {
-            throw new IOException("Folder does not exist: " + path);
+            throw new FileNotFoundException("Folder does not exist: " + path);
         }
         synchronized (this) {
             return new ArrayList<>(children.values());
@@ -135,7 +142,7 @@ public class MemoryFolder extends MemoryEntry implements Folder {
     @Nonnull
     public MemoryFile copy(@Nonnull String fileName, @Nonnull File content, LongConsumer progressListener) throws IOException {
         if (!exists()) {
-            throw new IOException("Folder does not exist: " + path);
+            throw new FileNotFoundException("Folder does not exist: " + path);
         }
         checkFileName(fileName);
 
@@ -156,6 +163,10 @@ public class MemoryFolder extends MemoryEntry implements Folder {
         MemoryFile newFile = new MemoryFile(childPath, provider, data, content.getCreationTime(), content.getLastModifiedTime());
         
         synchronized (this) {
+            MemoryEntry existing = children.get(fileName);
+            if (existing instanceof MemoryFolder && existing.exists()) {
+                throw new FileAlreadyExistsException(childPath, null, "A folder with the same name already exists");
+            }
             children.put(fileName, newFile);
         }
 
@@ -176,7 +187,7 @@ public class MemoryFolder extends MemoryEntry implements Folder {
     @Nonnull
     public MemoryFile createFile(@Nonnull String name, @Nonnull byte[] content) throws IOException {
         if (!exists()) {
-            throw new IOException("Folder does not exist: " + path);
+            throw new FileNotFoundException("Folder does not exist: " + path);
         }
         checkFileName(name);
 

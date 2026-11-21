@@ -106,8 +106,9 @@ class WalkTask extends RecursiveAction {
             } else {
                 // Destination entry is a file
                 // Delete the file and create the folder
-                destinationEntry = context.deleteThenCreate(destinationEntry.asFile(), destinationFolder, src);
-                spawnEmptyFolderTask(src, destinationEntry.asFolder());
+                // Do not call asFolder() on the created folder: on an eventually consistent provider, it may not be visible yet
+                final Folder created = context.deleteThenCreate(destinationEntry.asFile(), destinationFolder, src);
+                spawnEmptyFolderTask(src, created);
             }
         }
     }
