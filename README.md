@@ -35,7 +35,7 @@ Import with Maven:
 <dependency>
     <groupId>com.fathzer</groupId>
     <artifactId>sync4j</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 </dependency>
 ```
 
