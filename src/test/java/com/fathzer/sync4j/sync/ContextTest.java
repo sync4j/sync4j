@@ -98,7 +98,7 @@ class ContextTest {
     }
 
     @Test
-    void testDryRunDoesNotRegisterCreatedFolders() throws IOException {
+    void testDryRunDoesNotRegisterCreatedFolders() {
         SyncParameters parameters = new SyncParameters().dryRun(true);
         try (Context context = new Context(parameters)) {
             final Folder parent = folder(false);
